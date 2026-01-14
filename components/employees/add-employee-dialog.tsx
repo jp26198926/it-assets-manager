@@ -42,8 +42,10 @@ export function AddEmployeeDialog({
 
   useEffect(() => {
     const fetchDepartments = async () => {
-      const deps = await getDepartments();
-      setDepartments(deps);
+      const result = await getDepartments();
+      if (result.success && result.data) {
+        setDepartments(result.data);
+      }
     };
     if (open) {
       fetchDepartments();

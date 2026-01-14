@@ -358,14 +358,114 @@ export async function deleteEmployee(
   }
 }
 
-export async function getDepartments(): Promise<Department[]> {
+export async function getDepartments(): Promise<{
+  success: boolean;
+  data?: Department[];
+  error?: string;
+}> {
   try {
     const db = await getDatabase();
     const collection = db.collection<Department>("departments");
     const departments = await collection.find().sort({ name: 1 }).toArray();
-    return JSON.parse(JSON.stringify(departments));
+
+    // Serialize the departments
+    const serialized = departments.map((dept) => ({
+      _id: dept._id!.toString(),
+      name: dept.name,
+      code: dept.code,
+      description: dept.description,
+      createdAt: dept.createdAt.toISOString(),
+    })) as Department[];
+
+    return { success: true, data: serialized };
   } catch (error) {
     console.error("Error fetching departments:", error);
-    return [];
+    return { success: false, error: "Failed to fetch departments" };
+  }
+}
+
+export async function getDepartmentById(
+  id: string
+): Promise<Department | null> {
+  try {
+    const db = await getDatabase();
+    const collection = db.collection<Department>("departments");
+    const department = await collection.findOne({ _id: new ObjectId(id) });
+    return department ? JSON.parse(JSON.stringify(department)) : null;
+  } catch (error) {
+    console.error("Error fetching department:", error);
+    return null;
+  }
+}
+
+export async function updateDepartment(
+  id: string,
+  data: {
+    name?: string;
+    code?: string;
+    description?: string;
+  }
+): Promise<{ success: boolean; department?: any; error?: string }> {
+  try {
+    const db = await getDatabase();
+    const collection = db.collection<Department>("departments");
+
+    const result = await collection.findOneAndUpdate(
+      { _id: new ObjectId(id) },
+      { $set: data },
+      { returnDocument: "after" }
+    );
+
+    if (!result) {
+      return { success: false, error: "Department not found" };
+    }
+
+    // Serialize to plain object
+    const serialized = {
+      _id: result._id?.toString(),
+      name: result.name,
+      code: result.code,
+      description: result.description,
+      createdAt: result.createdAt.toISOString(),
+    };
+
+    revalidatePath("/departments");
+    return { success: true, department: serialized };
+  } catch (error) {
+    console.error("Error updating department:", error);
+    return { success: false, error: "Failed to update department" };
+  }
+}
+
+export async function deleteDepartment(
+  id: string
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const db = await getDatabase();
+
+    // Check if department is in use by any employees
+    const employeesUsingDept = await db
+      .collection("employees")
+      .countDocuments({ departmentId: new ObjectId(id) });
+
+    if (employeesUsingDept > 0) {
+      return {
+        success: false,
+        error: `Cannot delete department. ${employeesUsingDept} employee(s) are assigned to this department.`,
+      };
+    }
+
+    const collection = db.collection<Department>("departments");
+    const result = await collection.deleteOne({ _id: new ObjectId(id) });
+
+    if (result.deletedCount === 0) {
+      return { success: false, error: "Department not found" };
+    }
+
+    revalidatePath("/departments");
+    return { success: true };
+  } catch (error) {
+    console.error("Error deleting department:", error);
+    return { success: false, error: "Failed to delete department" };
   }
 }
