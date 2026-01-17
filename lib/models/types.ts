@@ -201,6 +201,12 @@ export interface Ticket {
   itemId?: ObjectId;
   itemBarcode?: string;
   itemName?: string;
+  attachments?: {
+    name: string;
+    url: string;
+    size: number;
+    type: string;
+  }[];
   comments?: TicketComment[];
   createdAt: Date;
   updatedAt: Date;

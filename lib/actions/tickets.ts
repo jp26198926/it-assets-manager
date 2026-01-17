@@ -69,6 +69,12 @@ export async function createTicket(data: {
   itemId?: string;
   itemBarcode?: string;
   itemName?: string;
+  attachments?: {
+    name: string;
+    url: string;
+    size: number;
+    type: string;
+  }[];
 }): Promise<{ success: boolean; ticket?: Ticket; error?: string }> {
   try {
     const db = await getDatabase();
@@ -93,6 +99,7 @@ export async function createTicket(data: {
       itemId: data.itemId ? new ObjectId(data.itemId) : undefined,
       itemBarcode: data.itemBarcode,
       itemName: data.itemName,
+      attachments: data.attachments || [],
       createdAt: new Date(),
       updatedAt: new Date(),
     };

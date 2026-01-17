@@ -7,7 +7,6 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -24,9 +23,18 @@ import type {
   TicketPriority,
   Department,
 } from "@/lib/models/types";
-import { Loader2, ArrowLeft, CheckCircle2 } from "lucide-react";
+import {
+  Loader2,
+  ArrowLeft,
+  CheckCircle2,
+  Upload,
+  FileIcon,
+  X,
+} from "lucide-react";
 import Link from "next/link";
 import { BarcodeScanner } from "@/components/barcode/barcode-scanner";
+import { RichTextEditor } from "@/components/knowledgebase/rich-text-editor";
+import { useToast } from "@/hooks/use-toast";
 
 const categories = [
   "Hardware Issue",
@@ -38,12 +46,29 @@ const categories = [
   "Other",
 ];
 
-interface CreateTicketFormProps {
-  availableItems: InventoryItem[];
+interface Attachment {
+  name: string;
+  url: string;
+  size: number;
+  type: string;
 }
 
-export function CreateTicketForm({ availableItems }: CreateTicketFormProps) {
+interface CreateTicketFormProps {
+  availableItems: InventoryItem[];
+  currentUser?: {
+    id: string;
+    name: string;
+    email: string;
+    departmentId?: string;
+  } | null;
+}
+
+export function CreateTicketForm({
+  availableItems,
+  currentUser,
+}: CreateTicketFormProps) {
   const router = useRouter();
+  const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
   const [success, setSuccess] = useState(false);
   const [createdTicketNumber, setCreatedTicketNumber] = useState<string | null>(
@@ -55,7 +80,18 @@ export function CreateTicketForm({ availableItems }: CreateTicketFormProps) {
   const [priority, setPriority] = useState<TicketPriority>("medium");
   const [category, setCategory] = useState<string>("");
   const [departments, setDepartments] = useState<Department[]>([]);
-  const [selectedDepartment, setSelectedDepartment] = useState<string>("");
+  const [selectedDepartment, setSelectedDepartment] = useState<string>(
+    currentUser?.departmentId || "",
+  );
+  const [description, setDescription] = useState<string>("");
+  const [attachments, setAttachments] = useState<Attachment[]>([]);
+  const [uploadingFile, setUploadingFile] = useState(false);
+  const [reporterName, setReporterName] = useState<string>(
+    currentUser?.name || "",
+  );
+  const [reporterEmail, setReporterEmail] = useState<string>(
+    currentUser?.email || "",
+  );
 
   useEffect(() => {
     const fetchDepartments = async () => {
@@ -77,6 +113,62 @@ export function CreateTicketForm({ availableItems }: CreateTicketFormProps) {
       setError(`Item with barcode ${barcode} not found`);
       setScannedItem(null);
     }
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadingFile(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const response = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        setAttachments([
+          ...attachments,
+          {
+            name: data.filename,
+            url: data.url,
+            size: data.size,
+            type: data.type,
+          },
+        ]);
+        toast({
+          title: "Success",
+          description: "File uploaded successfully",
+        });
+      } else {
+        throw new Error(data.error || "Upload failed");
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description:
+          error instanceof Error ? error.message : "Failed to upload file",
+        variant: "destructive",
+      });
+    } finally {
+      setUploadingFile(false);
+      e.target.value = "";
+    }
+  };
+
+  const handleRemoveAttachment = (urlToRemove: string) => {
+    setAttachments(attachments.filter((att) => att.url !== urlToRemove));
+  };
+
+  const formatFileSize = (bytes: number): string => {
+    if (bytes < 1024) return bytes + " B";
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
+    return (bytes / (1024 * 1024)).toFixed(1) + " MB";
   };
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
@@ -103,7 +195,7 @@ export function CreateTicketForm({ availableItems }: CreateTicketFormProps) {
     startTransition(async () => {
       const result = await createTicket({
         title: formData.get("title") as string,
-        description: formData.get("description") as string,
+        description: description,
         priority,
         category,
         reportedBy: {
@@ -111,6 +203,7 @@ export function CreateTicketForm({ availableItems }: CreateTicketFormProps) {
           email: formData.get("reporterEmail") as string,
           departmentId: selectedDepartment || undefined,
         },
+        attachments,
         ...itemInfo,
       });
 
@@ -152,6 +245,8 @@ export function CreateTicketForm({ availableItems }: CreateTicketFormProps) {
                   setCreatedTicketNumber(null);
                   setSelectedItem("");
                   setScannedItem(null);
+                  setDescription("");
+                  setAttachments([]);
                 }}
               >
                 Create Another Ticket
@@ -167,70 +262,127 @@ export function CreateTicketForm({ availableItems }: CreateTicketFormProps) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="max-w-4xl mx-auto">
-      <div className="grid gap-6 md:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Ticket Details</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="title">Title *</Label>
-              <Input
-                id="title"
-                name="title"
-                required
-                className="bg-secondary"
-                placeholder="Brief description of the issue"
-              />
-            </div>
+    <form onSubmit={handleSubmit} className="max-w-7xl mx-auto">
+      <div className="grid gap-6 lg:grid-cols-3">
+        <div className="lg:col-span-2">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Ticket Details</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="title">Title *</Label>
+                <Input
+                  id="title"
+                  name="title"
+                  required
+                  className="bg-secondary"
+                  placeholder="Brief description of the issue"
+                />
+              </div>
 
-            <div className="space-y-2">
-              <Label>Category *</Label>
-              <Select value={category} onValueChange={setCategory} required>
-                <SelectTrigger className="bg-secondary">
-                  <SelectValue placeholder="Select category" />
-                </SelectTrigger>
-                <SelectContent>
-                  {categories.map((cat) => (
-                    <SelectItem key={cat} value={cat}>
-                      {cat}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+              <div className="space-y-2">
+                <Label>Category *</Label>
+                <Select value={category} onValueChange={setCategory} required>
+                  <SelectTrigger className="bg-secondary">
+                    <SelectValue placeholder="Select category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categories.map((cat) => (
+                      <SelectItem key={cat} value={cat}>
+                        {cat}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
-            <div className="space-y-2">
-              <Label>Priority *</Label>
-              <Select
-                value={priority}
-                onValueChange={(value) => setPriority(value as TicketPriority)}
-              >
-                <SelectTrigger className="bg-secondary">
-                  <SelectValue placeholder="Select priority" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="low">Low</SelectItem>
-                  <SelectItem value="medium">Medium</SelectItem>
-                  <SelectItem value="high">High</SelectItem>
-                  <SelectItem value="critical">Critical</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+              <div className="space-y-2">
+                <Label>Priority *</Label>
+                <Select
+                  value={priority}
+                  onValueChange={(value) =>
+                    setPriority(value as TicketPriority)
+                  }
+                >
+                  <SelectTrigger className="bg-secondary">
+                    <SelectValue placeholder="Select priority" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="low">Low</SelectItem>
+                    <SelectItem value="medium">Medium</SelectItem>
+                    <SelectItem value="high">High</SelectItem>
+                    <SelectItem value="critical">Critical</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="description">Description *</Label>
-              <Textarea
-                id="description"
-                name="description"
-                required
-                className="bg-secondary min-h-[120px]"
-                placeholder="Detailed description of the issue"
-              />
-            </div>
-          </CardContent>
-        </Card>
+              <div className="space-y-2">
+                <Label htmlFor="description">Description *</Label>
+                <RichTextEditor
+                  content={description}
+                  onChange={setDescription}
+                  placeholder="Detailed description of the issue..."
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="attachments">File Attachments</Label>
+                <div className="border-2 border-dashed rounded-lg p-4">
+                  <div className="flex flex-col items-center justify-center gap-2">
+                    <Upload className="h-8 w-8 text-muted-foreground" />
+                    <p className="text-sm text-muted-foreground text-center">
+                      Click to upload files or drag and drop
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Maximum file size: 10MB
+                    </p>
+                    <Input
+                      id="attachments"
+                      type="file"
+                      onChange={handleFileUpload}
+                      disabled={uploadingFile}
+                      className="mt-2"
+                    />
+                  </div>
+                  {attachments.length > 0 && (
+                    <div className="mt-4 space-y-2">
+                      {attachments.map((attachment) => (
+                        <div
+                          key={attachment.url}
+                          className="flex items-center justify-between p-2 bg-muted rounded-md"
+                        >
+                          <div className="flex items-center gap-2 flex-1 min-w-0">
+                            <FileIcon className="h-4 w-4 flex-shrink-0" />
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium truncate">
+                                {attachment.name}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                {formatFileSize(attachment.size)}
+                              </p>
+                            </div>
+                          </div>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() =>
+                              handleRemoveAttachment(attachment.url)
+                            }
+                            className="flex-shrink-0"
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
 
         <div className="space-y-6">
           <Card>
@@ -243,6 +395,8 @@ export function CreateTicketForm({ availableItems }: CreateTicketFormProps) {
                 <Input
                   id="reporterName"
                   name="reporterName"
+                  value={reporterName}
+                  onChange={(e) => setReporterName(e.target.value)}
                   required
                   className="bg-secondary"
                   placeholder="John Doe"
@@ -255,6 +409,8 @@ export function CreateTicketForm({ availableItems }: CreateTicketFormProps) {
                   id="reporterEmail"
                   name="reporterEmail"
                   type="email"
+                  value={reporterEmail}
+                  onChange={(e) => setReporterEmail(e.target.value)}
                   required
                   className="bg-secondary"
                   placeholder="john@company.com"

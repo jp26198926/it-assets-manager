@@ -13,12 +13,13 @@ import {
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
 import type { Ticket, TicketStatus, TicketPriority } from "@/lib/models/types";
 import { format } from "date-fns";
 import { updateTicketStatus } from "@/lib/actions/tickets";
 import { getTechniciansAndAdmins } from "@/lib/actions/auth";
 import { useRouter } from "next/navigation";
-import { Loader2 } from "lucide-react";
+import { Loader2, Download, FileIcon } from "lucide-react";
 import { TicketComments } from "./ticket-comments";
 
 const statusVariants: Record<
@@ -122,8 +123,43 @@ export function TicketDetails({ ticket, currentUser }: TicketDetailsProps) {
                 <h4 className="text-sm text-muted-foreground mb-2">
                   Description
                 </h4>
-                <p className="whitespace-pre-wrap">{ticket.description}</p>
+                <div
+                  className="tiptap prose max-w-none dark:prose-invert"
+                  dangerouslySetInnerHTML={{ __html: ticket.description }}
+                />
               </div>
+
+              {ticket.attachments && ticket.attachments.length > 0 && (
+                <div className="pt-4 border-t">
+                  <h4 className="text-sm text-muted-foreground mb-2 flex items-center gap-2">
+                    <FileIcon className="h-4 w-4" />
+                    Attachments ({ticket.attachments.length})
+                  </h4>
+                  <div className="space-y-2">
+                    {ticket.attachments.map((attachment, index) => (
+                      <a
+                        key={index}
+                        href={attachment.url}
+                        download={attachment.name}
+                        className="flex items-center justify-between p-3 bg-secondary/50 hover:bg-secondary rounded-lg transition-colors group"
+                      >
+                        <div className="flex items-center gap-3 flex-1 min-w-0">
+                          <FileIcon className="h-5 w-5 flex-shrink-0" />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium truncate group-hover:text-primary">
+                              {attachment.name}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {(attachment.size / 1024).toFixed(1)} KB
+                            </p>
+                          </div>
+                        </div>
+                        <Download className="h-4 w-4 flex-shrink-0 text-muted-foreground group-hover:text-primary" />
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {ticket.itemBarcode && (
                 <div className="pt-4 border-t">
