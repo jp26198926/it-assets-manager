@@ -180,7 +180,10 @@ export async function updateTicketStatus(
 ): Promise<{ success: boolean; error?: string }> {
   try {
     const db = await getDatabase();
-    const collection = db.collection<Ticket>("tickets");
+    const ticketsCollection = db.collection<Ticket>("tickets");
+
+    // First, get the ticket to check if it has an associated item
+    const ticket = await ticketsCollection.findOne({ _id: new ObjectId(id) });
 
     const update: Record<string, unknown> = {
       status,
@@ -199,7 +202,52 @@ export async function updateTicketStatus(
       update.closedAt = new Date();
     }
 
-    await collection.updateOne({ _id: new ObjectId(id) }, { $set: update });
+    await ticketsCollection.updateOne(
+      { _id: new ObjectId(id) },
+      { $set: update },
+    );
+
+    // Update inventory item status based on ticket status
+    if (ticket?.itemId) {
+      const inventoryCollection = db.collection("inventory");
+      let itemStatus: string | null = null;
+
+      switch (status) {
+        case "open":
+        case "in_progress":
+        case "waiting_parts":
+          itemStatus = "under_repair";
+          break;
+        case "defective_closed":
+          itemStatus = "beyond_repair";
+          break;
+        case "resolved":
+        case "closed":
+          // Check if there are other open tickets for this item
+          const openTicketsCount = await ticketsCollection.countDocuments({
+            itemId: ticket.itemId,
+            status: {
+              $in: ["open", "in_progress", "waiting_parts"],
+            },
+            _id: { $ne: new ObjectId(id) },
+          });
+
+          // Only change status if no other open tickets
+          if (openTicketsCount === 0) {
+            itemStatus = "in_stock";
+          }
+          break;
+      }
+
+      if (itemStatus) {
+        await inventoryCollection.updateOne(
+          { _id: ticket.itemId },
+          { $set: { status: itemStatus, updatedAt: new Date() } },
+        );
+        revalidatePath("/inventory");
+        revalidatePath(`/inventory/${ticket.itemId.toString()}`);
+      }
+    }
 
     revalidatePath("/tickets");
     revalidatePath(`/tickets/${id}`);
@@ -430,5 +478,54 @@ export async function addCommentToTicket(
   } catch (error) {
     console.error("Error adding comment to ticket:", error);
     return { success: false, error: "Failed to add comment" };
+  }
+}
+
+export async function getTicketsByItemId(itemId: string) {
+  try {
+    const db = await getDatabase();
+    const collection = db.collection<Ticket>("tickets");
+
+    const tickets = await collection
+      .aggregate([
+        { $match: { itemId: new ObjectId(itemId) } },
+        {
+          $lookup: {
+            from: "users",
+            localField: "assignedToId",
+            foreignField: "_id",
+            as: "assignedUserData",
+          },
+        },
+        {
+          $addFields: {
+            assignedUser: {
+              $cond: {
+                if: {
+                  $and: [
+                    { $ne: ["$assignedToId", null] },
+                    { $gt: [{ $size: "$assignedUserData" }, 0] },
+                  ],
+                },
+                then: {
+                  _id: { $arrayElemAt: ["$assignedUserData._id", 0] },
+                  name: { $arrayElemAt: ["$assignedUserData.name", 0] },
+                  email: { $arrayElemAt: ["$assignedUserData.email", 0] },
+                  role: { $arrayElemAt: ["$assignedUserData.role", 0] },
+                },
+                else: null,
+              },
+            },
+          },
+        },
+        { $project: { assignedUserData: 0 } },
+        { $sort: { createdAt: -1 } },
+      ])
+      .toArray();
+
+    return tickets.map(serializeTicket);
+  } catch (error) {
+    console.error("Error fetching tickets by item ID:", error);
+    return [];
   }
 }

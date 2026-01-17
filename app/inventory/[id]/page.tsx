@@ -1,19 +1,28 @@
-import { MainLayout } from "@/components/layout/main-layout"
-import { PageHeader } from "@/components/ui/page-header"
-import { Button } from "@/components/ui/button"
-import { getInventoryItemById } from "@/lib/actions/inventory"
-import { getIssuancesByItem } from "@/lib/actions/issuance"
-import { notFound } from "next/navigation"
-import { ArrowLeft } from "lucide-react"
-import Link from "next/link"
-import { ItemDetails } from "@/components/inventory/item-details"
+import { MainLayout } from "@/components/layout/main-layout";
+import { PageHeader } from "@/components/ui/page-header";
+import { Button } from "@/components/ui/button";
+import { getInventoryItemById } from "@/lib/actions/inventory";
+import { getIssuancesByItem } from "@/lib/actions/issuance";
+import { getTicketsByItemId } from "@/lib/actions/tickets";
+import { notFound } from "next/navigation";
+import { ArrowLeft } from "lucide-react";
+import Link from "next/link";
+import { ItemDetails } from "@/components/inventory/item-details";
 
-export default async function ItemDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params
-  const [item, issuances] = await Promise.all([getInventoryItemById(id), getIssuancesByItem(id)])
+export default async function ItemDetailPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = await params;
+  const [item, issuances, tickets] = await Promise.all([
+    getInventoryItemById(id),
+    getIssuancesByItem(id),
+    getTicketsByItemId(id),
+  ]);
 
   if (!item) {
-    notFound()
+    notFound();
   }
 
   return (
@@ -32,8 +41,8 @@ export default async function ItemDetailPage({ params }: { params: Promise<{ id:
           }
         />
 
-        <ItemDetails item={item} issuances={issuances} />
+        <ItemDetails item={item} issuances={issuances} tickets={tickets} />
       </div>
     </MainLayout>
-  )
+  );
 }
