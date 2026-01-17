@@ -14,6 +14,7 @@ import {
   X,
   QrCode,
   FolderTree,
+  FileText,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
@@ -28,6 +29,7 @@ const navigation = [
   { name: "Categories", href: "/categories", icon: FolderTree },
   { name: "Issuance", href: "/issuance", icon: ArrowRightLeft },
   { name: "Tickets", href: "/tickets", icon: Ticket },
+  { name: "Reports", href: "/reports", icon: FileText },
 ];
 
 export function Sidebar() {
