@@ -2,10 +2,12 @@ import { MainLayout } from "@/components/layout/main-layout";
 import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
 import { getTicketWithDepartment } from "@/lib/actions/tickets";
+import { getCurrentUser } from "@/lib/actions/auth";
 import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { TicketDetails } from "@/components/tickets/ticket-details";
+import { TicketComments } from "@/components/tickets/ticket-comments";
 
 export default async function TicketDetailPage({
   params,
@@ -13,9 +15,16 @@ export default async function TicketDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const ticket = await getTicketWithDepartment(id);
+  const [ticket, user] = await Promise.all([
+    getTicketWithDepartment(id),
+    getCurrentUser(),
+  ]);
 
   if (!ticket) {
+    notFound();
+  }
+
+  if (!user) {
     notFound();
   }
 
@@ -35,7 +44,7 @@ export default async function TicketDetailPage({
           }
         />
 
-        <TicketDetails ticket={ticket} />
+        <TicketDetails ticket={ticket} currentUser={user} />
       </div>
     </MainLayout>
   );

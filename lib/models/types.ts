@@ -24,7 +24,8 @@ export type TicketStatus =
   | "in_progress"
   | "waiting_parts"
   | "resolved"
-  | "closed";
+  | "closed"
+  | "defective_closed";
 
 export type TicketPriority = "low" | "medium" | "high" | "critical";
 
@@ -174,6 +175,15 @@ export interface Issuance {
   returnStatus?: "good" | "damaged" | "needs_repair" | "beyond_repair";
 }
 
+export interface TicketComment {
+  _id?: ObjectId;
+  userId: ObjectId; // Reference to User collection
+  userName: string;
+  userEmail: string;
+  comment: string;
+  createdAt: Date;
+}
+
 export interface Ticket {
   _id?: ObjectId;
   ticketNumber: string;
@@ -191,6 +201,7 @@ export interface Ticket {
   itemId?: ObjectId;
   itemBarcode?: string;
   itemName?: string;
+  comments?: TicketComment[];
   createdAt: Date;
   updatedAt: Date;
   resolvedAt?: Date;
@@ -246,6 +257,7 @@ export interface TicketWithDepartmentSerialized {
   itemId?: string;
   itemBarcode?: string;
   itemName?: string;
+  comments?: TicketComment[];
   createdAt: string;
   updatedAt: string;
   resolvedAt?: string;

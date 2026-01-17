@@ -26,6 +26,7 @@ const statusVariants: Record<
   waiting_parts: "info",
   resolved: "success",
   closed: "secondary",
+  defective_closed: "destructive",
 };
 
 const priorityVariants: Record<

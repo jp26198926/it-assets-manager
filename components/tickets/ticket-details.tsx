@@ -19,6 +19,7 @@ import { updateTicketStatus } from "@/lib/actions/tickets";
 import { getTechniciansAndAdmins } from "@/lib/actions/auth";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
+import { TicketComments } from "./ticket-comments";
 
 const statusVariants: Record<
   TicketStatus,
@@ -29,6 +30,7 @@ const statusVariants: Record<
   waiting_parts: "info",
   resolved: "success",
   closed: "secondary",
+  defective_closed: "destructive",
 };
 
 const priorityVariants: Record<
@@ -43,9 +45,14 @@ const priorityVariants: Record<
 
 interface TicketDetailsProps {
   ticket: Ticket;
+  currentUser: {
+    id: string;
+    name: string;
+    email: string;
+  };
 }
 
-export function TicketDetails({ ticket }: TicketDetailsProps) {
+export function TicketDetails({ ticket, currentUser }: TicketDetailsProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [newStatus, setNewStatus] = useState<TicketStatus>(ticket.status);
@@ -68,9 +75,15 @@ export function TicketDetails({ ticket }: TicketDetailsProps) {
 
   const handleStatusUpdate = () => {
     startTransition(async () => {
+      // Auto-change status to 'in_progress' if assigning to an open ticket
+      let finalStatus = newStatus;
+      if (assignedToId && assignedToId !== "none" && newStatus === "open") {
+        finalStatus = "in_progress";
+      }
+
       const result = await updateTicketStatus(
         ticket._id!.toString(),
-        newStatus,
+        finalStatus,
         assignedToId || undefined,
       );
       if (result.success) {
@@ -129,29 +142,18 @@ export function TicketDetails({ ticket }: TicketDetailsProps) {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Reporter</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <dl className="grid gap-4 sm:grid-cols-3">
-              <div>
-                <dt className="text-sm text-muted-foreground">Name</dt>
-                <dd className="font-medium">{ticket.reportedBy.name}</dd>
-              </div>
-              <div>
-                <dt className="text-sm text-muted-foreground">Email</dt>
-                <dd className="font-medium">{ticket.reportedBy.email}</dd>
-              </div>
-              <div>
-                <dt className="text-sm text-muted-foreground">Department</dt>
-                <dd className="font-medium">
-                  {(ticket.reportedBy as any).department?.name || "-"}
-                </dd>
-              </div>
-            </dl>
-          </CardContent>
-        </Card>
+        <TicketComments
+          ticketId={ticket._id!.toString()}
+          comments={ticket.comments || []}
+          currentUser={{
+            _id: currentUser.id,
+            name: currentUser.name,
+            email: currentUser.email,
+          }}
+          reportedByEmail={ticket.reportedBy.email}
+          assignedUserEmail={(ticket as any).assignedUser?.email}
+          assignedToId={(ticket as any).assignedToId}
+        />
       </div>
 
       <div className="space-y-6">
@@ -175,6 +177,9 @@ export function TicketDetails({ ticket }: TicketDetailsProps) {
                   <SelectItem value="waiting_parts">Waiting Parts</SelectItem>
                   <SelectItem value="resolved">Resolved</SelectItem>
                   <SelectItem value="closed">Closed</SelectItem>
+                  <SelectItem value="defective_closed">
+                    Defective - Closed
+                  </SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -204,6 +209,30 @@ export function TicketDetails({ ticket }: TicketDetailsProps) {
               {isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               Update Status
             </Button>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Reporter</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <dl className="grid gap-4">
+              <div>
+                <dt className="text-sm text-muted-foreground">Name</dt>
+                <dd className="font-medium">{ticket.reportedBy.name}</dd>
+              </div>
+              <div>
+                <dt className="text-sm text-muted-foreground">Email</dt>
+                <dd className="font-medium">{ticket.reportedBy.email}</dd>
+              </div>
+              <div>
+                <dt className="text-sm text-muted-foreground">Department</dt>
+                <dd className="font-medium">
+                  {(ticket.reportedBy as any).department?.name || "-"}
+                </dd>
+              </div>
+            </dl>
           </CardContent>
         </Card>
 

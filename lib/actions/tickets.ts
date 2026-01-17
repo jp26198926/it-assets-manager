@@ -15,6 +15,15 @@ function serializeTicket(ticket: any) {
     updatedAt: ticket.updatedAt?.toISOString?.() || ticket.updatedAt,
     resolvedAt: ticket.resolvedAt?.toISOString?.() || ticket.resolvedAt,
     closedAt: ticket.closedAt?.toISOString?.() || ticket.closedAt,
+    comments:
+      ticket.comments?.map((comment: any) => ({
+        _id: comment._id?.toString(),
+        userId: comment.userId?.toString(),
+        userName: comment.userName,
+        userEmail: comment.userEmail,
+        comment: comment.comment,
+        createdAt: comment.createdAt?.toISOString?.() || comment.createdAt,
+      })) || [],
     reportedBy: {
       ...ticket.reportedBy,
       departmentId: ticket.reportedBy?.departmentId?.toString(),
@@ -193,6 +202,7 @@ export async function updateTicketStatus(
     await collection.updateOne({ _id: new ObjectId(id) }, { $set: update });
 
     revalidatePath("/tickets");
+    revalidatePath(`/tickets/${id}`);
     return { success: true };
   } catch (error) {
     console.error("Error updating ticket:", error);
@@ -378,5 +388,47 @@ export async function getTicketWithDepartment(id: string) {
   } catch (error) {
     console.error("Error fetching ticket with department:", error);
     return null;
+  }
+}
+
+export async function addCommentToTicket(
+  ticketId: string,
+  comment: string,
+  userId: string,
+  userName: string,
+  userEmail: string,
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const db = await getDatabase();
+    const collection = db.collection<Ticket>("tickets");
+
+    const newComment = {
+      _id: new ObjectId(),
+      userId: new ObjectId(userId),
+      userName,
+      userEmail,
+      comment,
+      createdAt: new Date(),
+    };
+
+    const result = await collection.updateOne(
+      { _id: new ObjectId(ticketId) },
+      {
+        $push: { comments: newComment } as any,
+        $set: { updatedAt: new Date() },
+      },
+    );
+
+    if (result.matchedCount === 0) {
+      return { success: false, error: "Ticket not found" };
+    }
+
+    revalidatePath(`/tickets/${ticketId}`);
+    revalidatePath("/tickets");
+
+    return { success: true };
+  } catch (error) {
+    console.error("Error adding comment to ticket:", error);
+    return { success: false, error: "Failed to add comment" };
   }
 }
