@@ -32,7 +32,7 @@ export function IssuanceList({
   const [returnDialogOpen, setReturnDialogOpen] = useState(false);
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
   const [selectedIssuance, setSelectedIssuance] = useState<Issuance | null>(
-    null
+    null,
   );
 
   const handleFilterChange = (newSearch: string, newStatus: string) => {

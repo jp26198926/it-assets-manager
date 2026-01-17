@@ -69,6 +69,10 @@ export function ItemDetails({ item, issuances, tickets }: ItemDetailsProps) {
           </CardHeader>
           <CardContent>
             <dl className="grid gap-4 sm:grid-cols-2">
+              <div className="sm:col-span-2">
+                <dt className="text-sm text-muted-foreground">Item Name</dt>
+                <dd className="font-medium text-lg">{item.name}</dd>
+              </div>
               <div>
                 <dt className="text-sm text-muted-foreground">Category</dt>
                 <dd className="font-medium">{item.category?.name || "N/A"}</dd>

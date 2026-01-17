@@ -62,11 +62,16 @@ export function IssuanceDetailsDialog({
               <div>
                 <dt className="text-sm text-muted-foreground">Issued Date</dt>
                 <dd className="font-medium">
-                  {format(new Date(issuance.issuedAt), "MMM d, yyyy 'at' h:mm a")}
+                  {format(
+                    new Date(issuance.issuedAt),
+                    "MMM d, yyyy 'at' h:mm a",
+                  )}
                 </dd>
               </div>
               <div>
-                <dt className="text-sm text-muted-foreground">Expected Return</dt>
+                <dt className="text-sm text-muted-foreground">
+                  Expected Return
+                </dt>
                 <dd className="font-medium">
                   {issuance.expectedReturn
                     ? format(new Date(issuance.expectedReturn), "MMM d, yyyy")
@@ -77,7 +82,9 @@ export function IssuanceDetailsDialog({
                 <dt className="text-sm text-muted-foreground">Status</dt>
                 <dd>
                   <StatusBadge
-                    variant={issuance.status === "active" ? "info" : "secondary"}
+                    variant={
+                      issuance.status === "active" ? "info" : "secondary"
+                    }
                   >
                     {issuance.status}
                   </StatusBadge>
@@ -98,15 +105,22 @@ export function IssuanceDetailsDialog({
               <h3 className="text-sm font-semibold mb-3">Return Information</h3>
               <dl className="grid gap-3 sm:grid-cols-2">
                 <div>
-                  <dt className="text-sm text-muted-foreground">Returned Date</dt>
+                  <dt className="text-sm text-muted-foreground">
+                    Returned Date
+                  </dt>
                   <dd className="font-medium">
                     {issuance.returnedAt
-                      ? format(new Date(issuance.returnedAt), "MMM d, yyyy 'at' h:mm a")
+                      ? format(
+                          new Date(issuance.returnedAt),
+                          "MMM d, yyyy 'at' h:mm a",
+                        )
                       : "-"}
                   </dd>
                 </div>
                 <div>
-                  <dt className="text-sm text-muted-foreground">Return Status</dt>
+                  <dt className="text-sm text-muted-foreground">
+                    Return Status
+                  </dt>
                   <dd>
                     {issuance.returnStatus && (
                       <StatusBadge
@@ -114,9 +128,9 @@ export function IssuanceDetailsDialog({
                           issuance.returnStatus === "good"
                             ? "success"
                             : issuance.returnStatus === "damaged" ||
-                              issuance.returnStatus === "needs_repair"
-                            ? "warning"
-                            : "destructive"
+                                issuance.returnStatus === "needs_repair"
+                              ? "warning"
+                              : "destructive"
                         }
                       >
                         {issuance.returnStatus.replace("_", " ")}

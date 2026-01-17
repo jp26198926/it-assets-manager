@@ -44,19 +44,23 @@ export function IssueItemForm({
   preSelectedItemId,
 }: IssueItemFormProps) {
   const router = useRouter();
-  
+
   // Find pre-selected item from availableItems
   const preSelectedItem = useMemo(() => {
     if (preSelectedItemId && availableItems.length > 0) {
-      return availableItems.find((item) => item._id === preSelectedItemId) || null;
+      return (
+        availableItems.find((item) => item._id === preSelectedItemId) || null
+      );
     }
     return null;
   }, [preSelectedItemId, availableItems]);
-  
+
   const [isPending, startTransition] = useTransition();
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [selectedItem, setSelectedItem] = useState<string>(preSelectedItemId || "");
+  const [selectedItem, setSelectedItem] = useState<string>(
+    preSelectedItemId || "",
+  );
   const [issuedToType, setIssuedToType] = useState<"employee" | "department">(
     "employee",
   );
