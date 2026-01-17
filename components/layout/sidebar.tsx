@@ -15,6 +15,7 @@ import {
   QrCode,
   FolderTree,
   FileText,
+  BookOpen,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
@@ -29,6 +30,7 @@ const navigation = [
   { name: "Categories", href: "/categories", icon: FolderTree },
   { name: "Issuance", href: "/issuance", icon: ArrowRightLeft },
   { name: "Tickets", href: "/tickets", icon: Ticket },
+  { name: "Knowledge Base", href: "/knowledgebase", icon: BookOpen },
   { name: "Reports", href: "/reports", icon: FileText },
 ];
 

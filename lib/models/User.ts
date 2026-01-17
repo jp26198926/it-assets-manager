@@ -34,6 +34,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
       actions: ["create", "read", "update", "delete"],
     },
     { resource: "employees", actions: ["create", "read", "update", "delete"] },
+    { resource: "knowledge", actions: ["create", "read", "update", "delete"] },
     { resource: "reports", actions: ["read"] },
   ],
   manager: [
@@ -42,6 +43,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     { resource: "issuance", actions: ["create", "read", "update"] },
     { resource: "departments", actions: ["read"] },
     { resource: "employees", actions: ["read"] },
+    { resource: "knowledge", actions: ["create", "read", "update"] },
     { resource: "reports", actions: ["read"] },
   ],
   employee: [
@@ -50,6 +52,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     { resource: "issuance", actions: ["read"] },
     { resource: "departments", actions: ["read"] },
     { resource: "employees", actions: ["read"] },
+    { resource: "knowledge", actions: ["read"] },
   ],
 };
 
