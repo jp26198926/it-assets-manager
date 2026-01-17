@@ -25,11 +25,8 @@ export default async function EditArticlePage({
     redirect("/login");
   }
 
-  // Check permissions
-  const canEdit =
-    user.role === "admin" ||
-    user.role === "manager" ||
-    user.id === result.data.authorId;
+  // Check permissions - only admin and the article creator can edit
+  const canEdit = user.role === "admin" || user.id === result.data.authorId;
 
   if (!canEdit) {
     redirect(`/knowledgebase/${id}`);

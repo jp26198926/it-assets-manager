@@ -30,6 +30,7 @@ export interface KnowledgeArticle {
     name: string;
     url: string;
     size: number;
+    type: string;
   }[];
   createdAt: Date;
   updatedAt: Date;

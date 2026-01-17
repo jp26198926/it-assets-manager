@@ -30,9 +30,6 @@ export function KnowledgebasePageContent({
   >();
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
 
-  // Debug: Log the user role
-  console.log("Knowledge Base - User Role:", userRole);
-
   const filteredArticles = articles.filter((article) => {
     // Search filter
     if (searchQuery) {

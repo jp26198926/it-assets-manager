@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "tw-animate-css";
+@import "../styles/tiptap.css";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -121,17 +122,20 @@
 @layer utilities {
   /* Neomorphic Effects */
   .neo-raised {
-    box-shadow: 8px 8px 16px var(--neo-shadow-dark),
+    box-shadow:
+      8px 8px 16px var(--neo-shadow-dark),
       -8px -8px 16px var(--neo-shadow-light);
   }
 
   .neo-pressed {
-    box-shadow: inset 6px 6px 12px var(--neo-shadow-dark),
+    box-shadow:
+      inset 6px 6px 12px var(--neo-shadow-dark),
       inset -6px -6px 12px var(--neo-shadow-light);
   }
 
   .neo-flat {
-    box-shadow: 4px 4px 8px var(--neo-shadow-dark),
+    box-shadow:
+      4px 4px 8px var(--neo-shadow-dark),
       -4px -4px 8px var(--neo-shadow-light);
   }
 
@@ -152,7 +156,8 @@
 
   /* Hover States */
   .neo-hover:hover {
-    box-shadow: 12px 12px 24px var(--neo-shadow-dark),
+    box-shadow:
+      12px 12px 24px var(--neo-shadow-dark),
       -12px -12px 24px var(--neo-shadow-light);
     transform: translateY(-2px);
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);

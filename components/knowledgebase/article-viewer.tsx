@@ -16,6 +16,8 @@ import {
   User,
   Tag,
   ArrowLeft,
+  Download,
+  FileIcon,
 } from "lucide-react";
 import type { KnowledgeArticleSerialized } from "@/lib/actions/knowledge";
 import {
@@ -109,61 +111,9 @@ export function ArticleViewer({
     }
   };
 
-  const canEdit =
-    userRole === "admin" ||
-    userRole === "manager" ||
-    userId === article.authorId;
+  const canEdit = userRole === "admin" || userId === article.authorId;
   // Admin has full delete access, others can only delete their own articles
   const canDelete = userRole === "admin" || userId === article.authorId;
-
-  // Simple markdown-like rendering (basic version)
-  const renderContent = (content: string) => {
-    return content.split("\n").map((line, index) => {
-      // Headers
-      if (line.startsWith("### ")) {
-        return (
-          <h3 key={index} className="text-lg font-semibold mt-4 mb-2">
-            {line.substring(4)}
-          </h3>
-        );
-      }
-      if (line.startsWith("## ")) {
-        return (
-          <h2 key={index} className="text-xl font-semibold mt-4 mb-2">
-            {line.substring(3)}
-          </h2>
-        );
-      }
-      if (line.startsWith("# ")) {
-        return (
-          <h1 key={index} className="text-2xl font-bold mt-4 mb-2">
-            {line.substring(2)}
-          </h1>
-        );
-      }
-
-      // Lists
-      if (line.startsWith("- ") || line.startsWith("* ")) {
-        return (
-          <li key={index} className="ml-4">
-            {line.substring(2)}
-          </li>
-        );
-      }
-
-      // Empty lines
-      if (line.trim() === "") {
-        return <br key={index} />;
-      }
-
-      // Regular paragraphs
-      return (
-        <p key={index} className="mb-2">
-          {line}
-        </p>
-      );
-    });
-  };
 
   return (
     <div className="space-y-6">
@@ -230,12 +180,6 @@ export function ArticleViewer({
 
           <h1 className="text-3xl font-bold mb-4">{article.title}</h1>
 
-          {article.summary && (
-            <p className="text-lg text-muted-foreground mb-4">
-              {article.summary}
-            </p>
-          )}
-
           <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
             <span className="flex items-center gap-1">
               <User className="h-4 w-4" />
@@ -266,9 +210,45 @@ export function ArticleViewer({
 
         <CardContent>
           <Separator className="mb-6" />
-          <div className="prose prose-sm max-w-none dark:prose-invert">
-            {renderContent(article.content)}
-          </div>
+          <div
+            className="tiptap prose max-w-none dark:prose-invert"
+            dangerouslySetInnerHTML={{ __html: article.content }}
+          />
+
+          {article.attachments && article.attachments.length > 0 && (
+            <>
+              <Separator className="my-8" />
+              <div className="space-y-3">
+                <h3 className="text-lg font-semibold flex items-center gap-2">
+                  <FileIcon className="h-5 w-5" />
+                  Attachments
+                </h3>
+                <div className="space-y-2">
+                  {article.attachments.map((attachment, index) => (
+                    <a
+                      key={index}
+                      href={attachment.url}
+                      download={attachment.name}
+                      className="flex items-center justify-between p-3 bg-muted hover:bg-muted/80 rounded-lg transition-colors group"
+                    >
+                      <div className="flex items-center gap-3 flex-1 min-w-0">
+                        <FileIcon className="h-5 w-5 flex-shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate group-hover:text-primary">
+                            {attachment.name}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {(attachment.size / 1024).toFixed(1)} KB
+                          </p>
+                        </div>
+                      </div>
+                      <Download className="h-4 w-4 flex-shrink-0 text-muted-foreground group-hover:text-primary" />
+                    </a>
+                  ))}
+                </div>
+              </div>
+            </>
+          )}
 
           <Separator className="my-8" />
 
@@ -313,8 +293,9 @@ export function ArticleViewer({
                     <div>
                       <h3 className="font-medium">{related.title}</h3>
                       <p className="text-sm text-muted-foreground line-clamp-1">
-                        {related.summary ||
-                          related.content.substring(0, 100) + "..."}
+                        {related.content
+                          .replace(/<[^>]*>/g, "")
+                          .substring(0, 100) + "..."}
                       </p>
                     </div>
                     <Badge variant="outline">{related.category}</Badge>

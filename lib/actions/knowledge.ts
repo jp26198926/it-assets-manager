@@ -54,6 +54,12 @@ export async function createArticle(data: {
   status: ArticleStatus;
   authorId: string;
   authorName: string;
+  attachments?: {
+    name: string;
+    url: string;
+    size: number;
+    type: string;
+  }[];
 }): Promise<{
   success: boolean;
   article?: KnowledgeArticleSerialized;
@@ -87,6 +93,7 @@ export async function createArticle(data: {
       viewCount: 0,
       helpfulCount: 0,
       notHelpfulCount: 0,
+      attachments: data.attachments || [],
       createdAt: now,
       updatedAt: now,
       publishedAt: data.status === "published" ? now : undefined,
@@ -200,9 +207,7 @@ export async function getArticles(filters?: KnowledgeSearchFilters): Promise<{
   }
 }
 
-export async function getArticleById(
-  id: string,
-): Promise<{
+export async function getArticleById(id: string): Promise<{
   success: boolean;
   data?: KnowledgeArticleSerialized;
   error?: string;
@@ -245,9 +250,7 @@ export async function getArticleById(
   }
 }
 
-export async function getArticleBySlug(
-  slug: string,
-): Promise<{
+export async function getArticleBySlug(slug: string): Promise<{
   success: boolean;
   data?: KnowledgeArticleSerialized;
   error?: string;
@@ -300,6 +303,12 @@ export async function updateArticle(
     tags?: string[];
     status?: ArticleStatus;
     lastEditedBy?: string;
+    attachments?: {
+      name: string;
+      url: string;
+      size: number;
+      type: string;
+    }[];
   },
 ): Promise<{
   success: boolean;
@@ -322,6 +331,8 @@ export async function updateArticle(
     if (data.summary !== undefined) updateData.summary = data.summary;
     if (data.category) updateData.category = data.category;
     if (data.tags) updateData.tags = data.tags;
+    if (data.attachments !== undefined)
+      updateData.attachments = data.attachments;
     if (data.lastEditedBy) updateData.lastEditedBy = data.lastEditedBy;
 
     // If changing status to published and it wasn't published before

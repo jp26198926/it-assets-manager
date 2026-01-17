@@ -61,11 +61,15 @@ app/
 
 components/
 └── knowledgebase/
-    ├── knowledgebase-page-content.tsx  # Main page wrapper
-    ├── article-list.tsx                # Article grid display
+    ├── knowledgebase-page-content.tsx  # Main page wrapper with search
+    ├── article-list.tsx                # Responsive datatable/card display
     ├── article-search-filters.tsx      # Filter component
-    ├── article-form.tsx                # Create/edit form
-    └── article-viewer.tsx              # Article detail view
+    ├── article-form.tsx                # Create/edit form with WYSIWYG
+    ├── article-viewer.tsx              # Article detail view with voting
+    └── rich-text-editor.tsx            # Tiptap WYSIWYG editor component
+
+styles/
+└── tiptap.css                          # Tiptap editor styling
 ```
 
 ## Database Schema
@@ -77,8 +81,8 @@ components/
   _id: ObjectId,
   title: string,
   slug: string,                    // URL-friendly version of title
-  content: string,                 // Main article content (markdown supported)
-  summary?: string,                // Optional brief summary
+  content: string,                 // Main article content (HTML from WYSIWYG editor)
+  summary?: string,                // Optional brief summary (kept for backward compatibility, not shown in UI)
   category: ArticleCategory,       // One of 8 predefined categories
   tags: string[],                  // Array of tags for search/organization
   status: ArticleStatus,           // draft | published | archived
@@ -120,11 +124,7 @@ components/
 
 ### Creating a New Article
 
-```typescript
-const result = await createArticle({
-  title: "How to Reset Network Password",
-  content: "# Network Password Reset\n\nFollow these steps...",
-  summary: "Guide to resetting your network password",
+<h1>Network Password Reset</h1><p>Follow these steps...</p>", // HTML from WYSIWYG editor
   category: "procedures",
   tags: ["password", "network", "security"],
   status: "published",
@@ -132,6 +132,13 @@ const result = await createArticle({
   authorName: user.name,
 });
 ```
+
+**Note**: Summary field is no longer used in the UI but kept in the model for backward compatibility.tatus: "published",
+authorId: user.id,
+authorName: user.name,
+});
+
+````
 
 ### Searching Articles
 
@@ -141,7 +148,7 @@ const result = await getArticles({
   search: "printer",
   status: "published",
 });
-```
+````
 
 ### Updating Article Status
 
@@ -154,11 +161,14 @@ const result = await updateArticle(articleId, {
 
 ## Content Formatting
 
-Articles support basic markdown-style formatting:
+Articles use a WYSIWYG editor (Tiptap) that supports:
 
-- **Headers**: `# H1`, `## H2`, `### H3`
-- **Lists**: Lines starting with `- ` or `* `
-- **Paragraphs**: Regular text lines
+- **Headers**: H1, H2, H3 via toolbar buttons
+- **Text Formatting**: Bold, Italic, Code
+- **Lists**: Bullet lists and numbered lists
+- **Blockquotes**: Quote blocks
+- **Paragraphs**: Regular text with proper spacing
+- Content is stored as HTML in the database
 
 ## Permissions
 
@@ -172,9 +182,9 @@ The knowledge module integrates with the existing RBAC system:
 
 ### Manager
 
-- Create and edit articles
+- Create articles
 - View all articles
-- Cannot delete articles (unless they are the author)
+- Edit and delete only their own articles (cannot edit/delete others' articles)
 
 ### Employee
 
@@ -182,20 +192,44 @@ The knowledge module integrates with the existing RBAC system:
 - Vote on article helpfulness
 - Search and browse the knowledge base
 
+## Implemented Features
+
+### WYSIWYG Editor
+
+- Tiptap rich text editor with toolbar
+- Bold, Italic, Code formatting
+- Headings (H1, H2, H3)
+- Bullet and ordered lists
+- Blockquotes
+- Undo/Redo functionality
+- Content stored as HTML
+
+### Responsive Design
+
+- **Desktop**: Datatable view with sortable columns
+- **Mobile**: Card-based grid layout
+- Adaptive UI for optimal viewing on all devices
+
+### Enhanced Permissions
+
+- **Admin**: Full CRUD access to all articles
+- **Manager**: Create articles, edit/delete only own articles
+- **Employee**: Read-only access to published articles
+- Only article creator and admin can edit/delete articles
+
 ## Future Enhancements
 
 Potential improvements for the knowledge base:
 
-1. **Rich Text Editor**: Replace textarea with WYSIWYG editor
-2. **File Attachments**: Allow uploading images and documents
-3. **Version History**: Track article revisions
-4. **Comments**: Allow users to comment on articles
-5. **Bookmarks**: Let users save favorite articles
-6. **Analytics**: Detailed viewing statistics and insights
-7. **Export**: Export articles to PDF or other formats
-8. **Categories Management**: Dynamic category creation
-9. **Advanced Search**: Faceted search with filters
-10. **Article Templates**: Predefined templates for common article types
+1. **File Attachments**: Allow uploading images and documents
+2. **Version History**: Track article revisions
+3. **Comments**: Allow users to comment on articles
+4. **Bookmarks**: Let users save favorite articles
+5. **Analytics**: Detailed viewing statistics and insights
+6. **Export**: Export articles to PDF or other formats
+7. **Categories Management**: Dynamic category creation
+8. **Advanced Search**: Faceted search with filters
+9. **Article Templates**: Predefined templates for common article types
 
 ## Integration Points
 

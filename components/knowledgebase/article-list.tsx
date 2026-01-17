@@ -13,10 +13,19 @@ import {
 import type { KnowledgeArticleSerialized } from "@/lib/actions/knowledge";
 import { Eye, ThumbsUp, Clock } from "lucide-react";
 import Link from "next/link";
-import { formatDistanceToNow, format } from "date-fns";
+import { formatDistanceToNow } from "date-fns";
 
 interface ArticleListProps {
   articles: KnowledgeArticleSerialized[];
+}
+
+// Helper function to strip HTML tags and get plain text preview
+function getPlainTextPreview(html: string, maxLength: number = 100): string {
+  const text = html
+    .replace(/<[^>]*>/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+  return text.length > maxLength ? text.substring(0, maxLength) + "..." : text;
 }
 
 export function ArticleList({ articles }: ArticleListProps) {
@@ -50,8 +59,7 @@ export function ArticleList({ articles }: ArticleListProps) {
                           {article.title}
                         </div>
                         <div className="text-xs text-muted-foreground line-clamp-1">
-                          {article.summary ||
-                            article.content.substring(0, 100) + "..."}
+                          {getPlainTextPreview(article.content, 100)}
                         </div>
                       </div>
                     </Link>
@@ -127,7 +135,7 @@ export function ArticleList({ articles }: ArticleListProps) {
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-muted-foreground line-clamp-3 mb-4">
-                  {article.summary || article.content.substring(0, 150) + "..."}
+                  {getPlainTextPreview(article.content, 150)}
                 </p>
 
                 <div className="flex flex-wrap gap-1 mb-4">
