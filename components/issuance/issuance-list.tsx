@@ -14,9 +14,10 @@ import {
 } from "@/components/ui/select";
 import { getIssuances } from "@/lib/actions/issuance";
 import { format } from "date-fns";
-import { Undo2 } from "lucide-react";
+import { Undo2, Eye } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { ReturnItemDialog } from "@/components/issuance/return-item-dialog";
+import { IssuanceDetailsDialog } from "@/components/issuance/issuance-details-dialog";
 
 export function IssuanceList({
   initialIssuances,
@@ -29,6 +30,7 @@ export function IssuanceList({
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [isPending, startTransition] = useTransition();
   const [returnDialogOpen, setReturnDialogOpen] = useState(false);
+  const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
   const [selectedIssuance, setSelectedIssuance] = useState<Issuance | null>(
     null
   );
@@ -48,6 +50,11 @@ export function IssuanceList({
   const handleReturnClick = (issuance: Issuance) => {
     setSelectedIssuance(issuance);
     setReturnDialogOpen(true);
+  };
+
+  const handleViewDetails = (issuance: Issuance) => {
+    setSelectedIssuance(issuance);
+    setDetailsDialogOpen(true);
   };
 
   const handleReturnSuccess = () => {
@@ -114,18 +121,29 @@ export function IssuanceList({
     {
       key: "actions",
       header: "",
-      cell: (issuance: Issuance) =>
-        issuance.status === "active" && (
+      cell: (issuance: Issuance) => (
+        <div className="flex items-center gap-2">
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => handleReturnClick(issuance)}
+            onClick={() => handleViewDetails(issuance)}
           >
-            <Undo2 className="h-4 w-4" />
-            <span className="ml-2 hidden sm:inline">Return</span>
+            <Eye className="h-4 w-4" />
+            <span className="ml-2 hidden sm:inline">View</span>
           </Button>
-        ),
-      className: "w-[100px]",
+          {issuance.status === "active" && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => handleReturnClick(issuance)}
+            >
+              <Undo2 className="h-4 w-4" />
+              <span className="ml-2 hidden sm:inline">Return</span>
+            </Button>
+          )}
+        </div>
+      ),
+      className: "w-[150px]",
     },
   ];
 
@@ -163,12 +181,19 @@ export function IssuanceList({
       />
 
       {selectedIssuance && (
-        <ReturnItemDialog
-          issuance={selectedIssuance}
-          open={returnDialogOpen}
-          onOpenChange={setReturnDialogOpen}
-          onSuccess={handleReturnSuccess}
-        />
+        <>
+          <ReturnItemDialog
+            issuance={selectedIssuance}
+            open={returnDialogOpen}
+            onOpenChange={setReturnDialogOpen}
+            onSuccess={handleReturnSuccess}
+          />
+          <IssuanceDetailsDialog
+            issuance={selectedIssuance}
+            open={detailsDialogOpen}
+            onOpenChange={setDetailsDialogOpen}
+          />
+        </>
       )}
     </div>
   );
