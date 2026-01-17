@@ -4,7 +4,6 @@ import { StatCard } from "@/components/ui/stat-card";
 import { Badge } from "@/components/ui/badge";
 import { getInventoryStats } from "@/lib/actions/inventory";
 import { getTicketStats } from "@/lib/actions/tickets";
-import { getRepairStats } from "@/lib/actions/repairs";
 import { getCurrentUser } from "@/lib/actions/auth";
 import {
   Package,
@@ -21,10 +20,9 @@ import { DashboardCharts } from "@/components/dashboard/dashboard-charts";
 import { RecentActivity } from "@/components/dashboard/recent-activity";
 
 export default async function DashboardPage() {
-  const [inventoryStats, ticketStats, repairStats, user] = await Promise.all([
+  const [inventoryStats, ticketStats, user] = await Promise.all([
     getInventoryStats(),
     getTicketStats(),
-    getRepairStats(),
     getCurrentUser(),
   ]);
 
@@ -104,37 +102,6 @@ export default async function DashboardPage() {
               value={ticketStats.resolved}
               icon={CheckCircle2}
               description="Completed tickets"
-            />
-          </div>
-        </div>
-
-        {/* Repair Stats */}
-        <div>
-          <h2 className="text-lg font-semibold mb-4">Repair Overview</h2>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <StatCard
-              title="Total Repairs"
-              value={repairStats.total}
-              icon={Wrench}
-              description="All repair records"
-            />
-            <StatCard
-              title="Pending"
-              value={repairStats.pending}
-              icon={AlertCircle}
-              description="In progress"
-            />
-            <StatCard
-              title="Fixed"
-              value={repairStats.fixed}
-              icon={TicketCheck}
-              description="Successfully repaired"
-            />
-            <StatCard
-              title="Beyond Repair"
-              value={repairStats.beyondRepair}
-              icon={PackageX}
-              description="For replacement"
             />
           </div>
         </div>

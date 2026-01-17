@@ -3,7 +3,7 @@ import { getCurrentUser } from "@/lib/actions/auth";
 
 export async function checkPermission(
   resource: string,
-  action: string
+  action: string,
 ): Promise<boolean> {
   const user = await getCurrentUser();
   if (!user) return false;
@@ -13,12 +13,12 @@ export async function checkPermission(
 
 export async function requirePermission(
   resource: string,
-  action: string
+  action: string,
 ): Promise<void> {
   const hasAccess = await checkPermission(resource, action);
   if (!hasAccess) {
     throw new Error(
-      `Forbidden: You don't have permission to ${action} ${resource}`
+      `Forbidden: You don't have permission to ${action} ${resource}`,
     );
   }
 }
@@ -26,7 +26,7 @@ export async function requirePermission(
 export function canAccess(
   userRole: UserRole,
   resource: string,
-  action: string
+  action: string,
 ): boolean {
   return hasPermission(userRole, resource, action);
 }
@@ -42,7 +42,6 @@ export function getPermissionsForRole(role: UserRole) {
     canDeleteTicket: hasPermission(role, "tickets", "delete"),
     canManageUsers: hasPermission(role, "users", "create"),
     canManageIssuance: hasPermission(role, "issuance", "create"),
-    canManageRepairs: hasPermission(role, "repairs", "update"),
     canViewReports: hasPermission(role, "reports", "read"),
   };
 }

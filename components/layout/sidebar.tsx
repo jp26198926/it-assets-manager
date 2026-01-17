@@ -10,10 +10,10 @@ import {
   Building2,
   ArrowRightLeft,
   Ticket,
-  Wrench,
   Menu,
   X,
   QrCode,
+  FolderTree,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
@@ -25,9 +25,9 @@ const navigation = [
   { name: "Inventory", href: "/inventory", icon: Package },
   { name: "Employees", href: "/employees", icon: Users },
   { name: "Departments", href: "/departments", icon: Building2 },
+  { name: "Categories", href: "/categories", icon: FolderTree },
   { name: "Issuance", href: "/issuance", icon: ArrowRightLeft },
   { name: "Tickets", href: "/tickets", icon: Ticket },
-  { name: "Repairs", href: "/repairs", icon: Wrench },
 ];
 
 export function Sidebar() {
@@ -86,7 +86,7 @@ export function Sidebar() {
       <aside
         className={cn(
           "fixed top-0 left-0 z-40 h-screen w-64 bg-card border-r transition-transform lg:translate-x-0 neo-raised glass",
-          mobileOpen ? "translate-x-0" : "-translate-x-full"
+          mobileOpen ? "translate-x-0" : "-translate-x-full",
         )}
       >
         <div className="flex h-16 items-center justify-between gap-2 border-b px-6">
@@ -111,7 +111,7 @@ export function Sidebar() {
                   "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-300",
                   isActive
                     ? "bg-secondary text-foreground neo-pressed"
-                    : "text-muted-foreground hover:bg-secondary/50 hover:text-foreground glass-hover"
+                    : "text-muted-foreground hover:bg-secondary/50 hover:text-foreground glass-hover",
                 )}
               >
                 <item.icon className="h-5 w-5" />

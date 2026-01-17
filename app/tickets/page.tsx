@@ -1,13 +1,13 @@
-import { MainLayout } from "@/components/layout/main-layout"
-import { PageHeader } from "@/components/ui/page-header"
-import { Button } from "@/components/ui/button"
-import { Plus } from "lucide-react"
-import Link from "next/link"
-import { getTickets } from "@/lib/actions/tickets"
-import { TicketList } from "@/components/tickets/ticket-list"
+import { MainLayout } from "@/components/layout/main-layout";
+import { PageHeader } from "@/components/ui/page-header";
+import { Button } from "@/components/ui/button";
+import { Plus } from "lucide-react";
+import Link from "next/link";
+import { getTicketsWithDepartment } from "@/lib/actions/tickets";
+import { TicketList } from "@/components/tickets/ticket-list";
 
 export default async function TicketsPage() {
-  const tickets = await getTickets()
+  const tickets = await getTicketsWithDepartment();
 
   return (
     <MainLayout>
@@ -28,5 +28,5 @@ export default async function TicketsPage() {
         <TicketList initialTickets={tickets} />
       </div>
     </MainLayout>
-  )
+  );
 }

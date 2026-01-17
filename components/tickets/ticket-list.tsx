@@ -1,55 +1,80 @@
-"use client"
+"use client";
 
-import { useState, useTransition } from "react"
-import type { Ticket, TicketStatus, TicketPriority } from "@/lib/models/types"
-import { DataTable } from "@/components/ui/data-table"
-import { StatusBadge } from "@/components/ui/status-badge"
-import { Button } from "@/components/ui/button"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Eye } from "lucide-react"
-import Link from "next/link"
-import { getTickets } from "@/lib/actions/tickets"
-import { format } from "date-fns"
+import { useState, useTransition } from "react";
+import type { Ticket, TicketStatus, TicketPriority } from "@/lib/models/types";
+import { DataTable } from "@/components/ui/data-table";
+import { StatusBadge } from "@/components/ui/status-badge";
+import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Eye } from "lucide-react";
+import Link from "next/link";
+import { getTicketsWithDepartment } from "@/lib/actions/tickets";
+import { format } from "date-fns";
 
-const statusVariants: Record<TicketStatus, "success" | "warning" | "destructive" | "info" | "secondary"> = {
+const statusVariants: Record<
+  TicketStatus,
+  "success" | "warning" | "destructive" | "info" | "secondary"
+> = {
   open: "destructive",
   in_progress: "warning",
   waiting_parts: "info",
   resolved: "success",
   closed: "secondary",
-}
+};
 
-const priorityVariants: Record<TicketPriority, "success" | "warning" | "destructive" | "info" | "secondary"> = {
+const priorityVariants: Record<
+  TicketPriority,
+  "success" | "warning" | "destructive" | "info" | "secondary"
+> = {
   low: "secondary",
   medium: "info",
   high: "warning",
   critical: "destructive",
-}
+};
 
 export function TicketList({ initialTickets }: { initialTickets: Ticket[] }) {
-  const [tickets, setTickets] = useState(initialTickets)
-  const [search, setSearch] = useState("")
-  const [statusFilter, setStatusFilter] = useState<string>("all")
-  const [priorityFilter, setPriorityFilter] = useState<string>("all")
-  const [isPending, startTransition] = useTransition()
+  const [tickets, setTickets] = useState(initialTickets);
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [priorityFilter, setPriorityFilter] = useState<string>("all");
+  const [isPending, startTransition] = useTransition();
 
-  const handleFilterChange = (newSearch: string, newStatus: string, newPriority: string) => {
+  const handleFilterChange = (
+    newSearch: string,
+    newStatus: string,
+    newPriority: string,
+  ) => {
     startTransition(async () => {
-      const filters: { status?: TicketStatus; priority?: TicketPriority; search?: string } = {}
-      if (newStatus !== "all") filters.status = newStatus as TicketStatus
-      if (newPriority !== "all") filters.priority = newPriority as TicketPriority
-      if (newSearch) filters.search = newSearch
+      const filters: {
+        status?: TicketStatus;
+        priority?: TicketPriority;
+        search?: string;
+      } = {};
+      if (newStatus !== "all") filters.status = newStatus as TicketStatus;
+      if (newPriority !== "all")
+        filters.priority = newPriority as TicketPriority;
+      if (newSearch) filters.search = newSearch;
 
-      const filtered = await getTickets(filters)
-      setTickets(filtered)
-    })
-  }
+      const filtered = await getTicketsWithDepartment(filters);
+      setTickets(filtered);
+    });
+  };
 
   const columns = [
     {
       key: "ticketNumber",
       header: "Ticket #",
-      cell: (ticket: Ticket) => <span className="font-mono text-sm font-medium">{ticket.ticketNumber}</span>,
+      cell: (ticket: Ticket) => (
+        <span className="font-mono text-sm font-medium">
+          {ticket.ticketNumber}
+        </span>
+      ),
     },
     {
       key: "title",
@@ -67,7 +92,9 @@ export function TicketList({ initialTickets }: { initialTickets: Ticket[] }) {
       cell: (ticket: Ticket) => (
         <div>
           <p className="text-sm">{ticket.reportedBy.name}</p>
-          <p className="text-xs text-muted-foreground">{ticket.reportedBy.department || "-"}</p>
+          <p className="text-xs text-muted-foreground">
+            {(ticket.reportedBy as any).department?.name || "-"}
+          </p>
         </div>
       ),
       className: "hidden md:table-cell",
@@ -76,14 +103,18 @@ export function TicketList({ initialTickets }: { initialTickets: Ticket[] }) {
       key: "priority",
       header: "Priority",
       cell: (ticket: Ticket) => (
-        <StatusBadge variant={priorityVariants[ticket.priority]}>{ticket.priority}</StatusBadge>
+        <StatusBadge variant={priorityVariants[ticket.priority]}>
+          {ticket.priority}
+        </StatusBadge>
       ),
     },
     {
       key: "status",
       header: "Status",
       cell: (ticket: Ticket) => (
-        <StatusBadge variant={statusVariants[ticket.status]}>{ticket.status.replace("_", " ")}</StatusBadge>
+        <StatusBadge variant={statusVariants[ticket.status]}>
+          {ticket.status.replace("_", " ")}
+        </StatusBadge>
       ),
     },
     {
@@ -91,7 +122,9 @@ export function TicketList({ initialTickets }: { initialTickets: Ticket[] }) {
       header: "Item",
       cell: (ticket: Ticket) =>
         ticket.itemBarcode ? (
-          <span className="font-mono text-xs text-muted-foreground">{ticket.itemBarcode}</span>
+          <span className="font-mono text-xs text-muted-foreground">
+            {ticket.itemBarcode}
+          </span>
         ) : (
           <span className="text-muted-foreground">-</span>
         ),
@@ -101,7 +134,9 @@ export function TicketList({ initialTickets }: { initialTickets: Ticket[] }) {
       key: "createdAt",
       header: "Created",
       cell: (ticket: Ticket) => (
-        <span className="text-sm text-muted-foreground">{format(new Date(ticket.createdAt), "MMM d, yyyy")}</span>
+        <span className="text-sm text-muted-foreground">
+          {format(new Date(ticket.createdAt), "MMM d, yyyy")}
+        </span>
       ),
       className: "hidden lg:table-cell",
     },
@@ -117,7 +152,7 @@ export function TicketList({ initialTickets }: { initialTickets: Ticket[] }) {
       ),
       className: "w-[50px]",
     },
-  ]
+  ];
 
   return (
     <div className="space-y-4">
@@ -125,8 +160,8 @@ export function TicketList({ initialTickets }: { initialTickets: Ticket[] }) {
         <Select
           value={statusFilter}
           onValueChange={(value) => {
-            setStatusFilter(value)
-            handleFilterChange(search, value, priorityFilter)
+            setStatusFilter(value);
+            handleFilterChange(search, value, priorityFilter);
           }}
         >
           <SelectTrigger className="w-full sm:w-[180px] bg-secondary">
@@ -145,8 +180,8 @@ export function TicketList({ initialTickets }: { initialTickets: Ticket[] }) {
         <Select
           value={priorityFilter}
           onValueChange={(value) => {
-            setPriorityFilter(value)
-            handleFilterChange(search, statusFilter, value)
+            setPriorityFilter(value);
+            handleFilterChange(search, statusFilter, value);
           }}
         >
           <SelectTrigger className="w-full sm:w-[180px] bg-secondary">
@@ -168,11 +203,11 @@ export function TicketList({ initialTickets }: { initialTickets: Ticket[] }) {
         searchPlaceholder="Search by ticket number, title, or reporter..."
         searchValue={search}
         onSearchChange={(value) => {
-          setSearch(value)
-          handleFilterChange(value, statusFilter, priorityFilter)
+          setSearch(value);
+          handleFilterChange(value, statusFilter, priorityFilter);
         }}
         emptyMessage={isPending ? "Loading..." : "No tickets found"}
       />
     </div>
-  )
+  );
 }

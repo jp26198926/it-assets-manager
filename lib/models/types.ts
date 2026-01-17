@@ -28,14 +28,12 @@ export type TicketStatus =
 
 export type TicketPriority = "low" | "medium" | "high" | "critical";
 
-export type RepairOutcome = "fixed" | "beyond_repair" | "pending";
-
 export interface InventoryItem {
   _id?: ObjectId;
   barcode: string;
   name: string;
   description?: string;
-  category: ItemCategory;
+  categoryId: ObjectId; // Reference to Category collection
   brand?: string;
   model?: string;
   serialNumber?: string;
@@ -47,6 +45,44 @@ export interface InventoryItem {
   notes?: string;
   createdAt: Date;
   updatedAt: Date;
+}
+
+// Extended inventory item with populated category data
+export interface InventoryItemWithCategory extends Omit<
+  InventoryItem,
+  "categoryId"
+> {
+  categoryId: ObjectId;
+  category: {
+    _id: ObjectId;
+    name: string;
+    code: string;
+  };
+}
+
+// Serialized version for client components
+export interface InventoryItemWithCategorySerialized {
+  _id?: string;
+  barcode: string;
+  name: string;
+  description?: string;
+  categoryId: string;
+  brand?: string;
+  model?: string;
+  serialNumber?: string;
+  status: ItemStatus;
+  purchaseDate?: string;
+  purchasePrice?: number;
+  warrantyExpiry?: string;
+  location?: string;
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+  category: {
+    _id: string;
+    name: string;
+    code: string;
+  };
 }
 
 export interface Employee {
@@ -101,6 +137,23 @@ export interface Department {
   createdAt: Date;
 }
 
+export interface Category {
+  _id?: ObjectId;
+  name: string;
+  code: string;
+  description?: string;
+  createdAt: Date;
+}
+
+// Serialized version for client components
+export interface CategorySerialized {
+  _id: string;
+  name: string;
+  code: string;
+  description?: string;
+  createdAt: string;
+}
+
 export interface Issuance {
   _id?: ObjectId;
   itemId: ObjectId;
@@ -117,6 +170,8 @@ export interface Issuance {
   expectedReturn?: Date;
   notes?: string;
   status: "active" | "returned";
+  returnRemarks?: string;
+  returnStatus?: "good" | "damaged" | "needs_repair" | "beyond_repair";
 }
 
 export interface Ticket {
@@ -130,9 +185,9 @@ export interface Ticket {
   reportedBy: {
     name: string;
     email: string;
-    department?: string;
+    departmentId?: ObjectId; // Reference to Department collection
   };
-  assignedTo?: string;
+  assignedToId?: ObjectId; // Reference to User collection
   itemId?: ObjectId;
   itemBarcode?: string;
   itemName?: string;
@@ -142,23 +197,57 @@ export interface Ticket {
   closedAt?: Date;
 }
 
-export interface RepairRecord {
-  _id?: ObjectId;
-  ticketId: ObjectId;
+// Extended ticket with populated department and assigned user data
+export interface TicketWithDepartment extends Omit<Ticket, "reportedBy"> {
+  reportedBy: {
+    name: string;
+    email: string;
+    departmentId?: ObjectId;
+    department?: {
+      _id: ObjectId;
+      name: string;
+      code: string;
+    };
+  };
+  assignedUser?: {
+    _id: ObjectId;
+    name: string;
+    email: string;
+    role: string;
+  };
+}
+
+// Serialized version for client components
+export interface TicketWithDepartmentSerialized {
+  _id?: string;
   ticketNumber: string;
-  itemId: ObjectId;
-  itemBarcode: string;
-  itemName: string;
-  technicianName: string;
-  receivedAt: Date;
-  diagnosis?: string;
-  actionsTaken?: string;
-  partsUsed?: string[];
-  outcome: RepairOutcome;
-  completedAt?: Date;
-  returnedToUser: boolean;
-  returnedAt?: Date;
-  notes?: string;
-  createdAt: Date;
-  updatedAt: Date;
+  title: string;
+  description: string;
+  priority: TicketPriority;
+  status: TicketStatus;
+  category: string;
+  reportedBy: {
+    name: string;
+    email: string;
+    departmentId?: string;
+    department?: {
+      _id: string;
+      name: string;
+      code: string;
+    };
+  };
+  assignedToId?: string;
+  assignedUser?: {
+    _id: string;
+    name: string;
+    email: string;
+    role: string;
+  };
+  itemId?: string;
+  itemBarcode?: string;
+  itemName?: string;
+  createdAt: string;
+  updatedAt: string;
+  resolvedAt?: string;
+  closedAt?: string;
 }

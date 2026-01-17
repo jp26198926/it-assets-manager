@@ -32,12 +32,14 @@ interface IssueItemFormProps {
   availableItems: InventoryItem[];
   employees: EmployeeWithDepartmentSerialized[];
   departments: Department[];
+  currentUserName: string;
 }
 
 export function IssueItemForm({
   availableItems,
   employees,
   departments,
+  currentUserName,
 }: IssueItemFormProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -72,7 +74,10 @@ export function IssueItemForm({
       const employee = employees.find(
         (e) => e._id?.toString() === selectedRecipient
       );
-      return employee?.name || "";
+      if (!employee) return "";
+      return `${employee.firstName} ${
+        employee.middleName ? employee.middleName + " " : ""
+      }${employee.lastName}`;
     } else {
       const department = departments.find(
         (d) => d._id?.toString() === selectedRecipient
@@ -277,7 +282,9 @@ export function IssueItemForm({
                           key={emp._id?.toString()}
                           value={emp._id!.toString()}
                         >
-                          {emp.name}{" "}
+                          {emp.firstName}{" "}
+                          {emp.middleName ? emp.middleName + " " : ""}
+                          {emp.lastName}{" "}
                           {emp.department ? `(${emp.department.name})` : ""}
                         </SelectItem>
                       ))
@@ -301,6 +308,8 @@ export function IssueItemForm({
                 required
                 className="bg-secondary"
                 placeholder="Your name"
+                defaultValue={currentUserName}
+                readOnly
               />
             </div>
 

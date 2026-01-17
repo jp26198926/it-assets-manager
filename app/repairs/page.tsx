@@ -1,13 +1,13 @@
-import { MainLayout } from "@/components/layout/main-layout"
-import { PageHeader } from "@/components/ui/page-header"
-import { Button } from "@/components/ui/button"
-import { Plus } from "lucide-react"
-import Link from "next/link"
-import { getRepairs } from "@/lib/actions/repairs"
-import { RepairList } from "@/components/repairs/repair-list"
+import { MainLayout } from "@/components/layout/main-layout";
+import { PageHeader } from "@/components/ui/page-header";
+import { Button } from "@/components/ui/button";
+import { Plus } from "lucide-react";
+import Link from "next/link";
+import { getRepairsWithTechnician } from "@/lib/actions/repairs";
+import { RepairList } from "@/components/repairs/repair-list";
 
 export default async function RepairsPage() {
-  const repairs = await getRepairs()
+  const repairs = await getRepairsWithTechnician();
 
   return (
     <MainLayout>
@@ -28,5 +28,5 @@ export default async function RepairsPage() {
         <RepairList initialRepairs={repairs} />
       </div>
     </MainLayout>
-  )
+  );
 }

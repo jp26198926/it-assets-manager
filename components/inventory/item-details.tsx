@@ -1,35 +1,29 @@
-"use client"
+"use client";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { StatusBadge } from "@/components/ui/status-badge"
-import { BarcodeDisplay } from "@/components/barcode/barcode-display"
-import type { InventoryItem, Issuance, ItemStatus } from "@/lib/models/types"
-import { format } from "date-fns"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { StatusBadge } from "@/components/ui/status-badge";
+import { BarcodeDisplay } from "@/components/barcode/barcode-display";
+import type {
+  InventoryItemWithCategorySerialized,
+  Issuance,
+  ItemStatus,
+} from "@/lib/models/types";
+import { format } from "date-fns";
 
-const statusVariants: Record<ItemStatus, "success" | "warning" | "destructive" | "info" | "secondary"> = {
+const statusVariants: Record<
+  ItemStatus,
+  "success" | "warning" | "destructive" | "info" | "secondary"
+> = {
   in_stock: "success",
   issued: "info",
   under_repair: "warning",
   beyond_repair: "destructive",
   disposed: "secondary",
-}
-
-const categoryLabels: Record<string, string> = {
-  laptop: "Laptop",
-  desktop: "Desktop",
-  monitor: "Monitor",
-  keyboard: "Keyboard",
-  mouse: "Mouse",
-  printer: "Printer",
-  network: "Network Device",
-  storage: "Storage Device",
-  accessory: "Accessory",
-  other: "Other",
-}
+};
 
 interface ItemDetailsProps {
-  item: InventoryItem
-  issuances: Issuance[]
+  item: InventoryItemWithCategorySerialized;
+  issuances: Issuance[];
 }
 
 export function ItemDetails({ item, issuances }: ItemDetailsProps) {
@@ -40,14 +34,16 @@ export function ItemDetails({ item, issuances }: ItemDetailsProps) {
           <CardHeader>
             <CardTitle className="text-lg flex items-center justify-between">
               Item Information
-              <StatusBadge variant={statusVariants[item.status]}>{item.status.replace("_", " ")}</StatusBadge>
+              <StatusBadge variant={statusVariants[item.status]}>
+                {item.status.replace("_", " ")}
+              </StatusBadge>
             </CardTitle>
           </CardHeader>
           <CardContent>
             <dl className="grid gap-4 sm:grid-cols-2">
               <div>
                 <dt className="text-sm text-muted-foreground">Category</dt>
-                <dd className="font-medium">{categoryLabels[item.category]}</dd>
+                <dd className="font-medium">{item.category?.name || "N/A"}</dd>
               </div>
               <div>
                 <dt className="text-sm text-muted-foreground">Brand</dt>
@@ -59,7 +55,9 @@ export function ItemDetails({ item, issuances }: ItemDetailsProps) {
               </div>
               <div>
                 <dt className="text-sm text-muted-foreground">Serial Number</dt>
-                <dd className="font-medium font-mono">{item.serialNumber || "-"}</dd>
+                <dd className="font-medium font-mono">
+                  {item.serialNumber || "-"}
+                </dd>
               </div>
               <div>
                 <dt className="text-sm text-muted-foreground">Location</dt>
@@ -68,23 +66,37 @@ export function ItemDetails({ item, issuances }: ItemDetailsProps) {
               <div>
                 <dt className="text-sm text-muted-foreground">Purchase Date</dt>
                 <dd className="font-medium">
-                  {item.purchaseDate ? format(new Date(item.purchaseDate), "MMM d, yyyy") : "-"}
+                  {item.purchaseDate
+                    ? format(new Date(item.purchaseDate), "MMM d, yyyy")
+                    : "-"}
                 </dd>
               </div>
               <div>
-                <dt className="text-sm text-muted-foreground">Purchase Price</dt>
-                <dd className="font-medium">{item.purchasePrice ? `$${item.purchasePrice.toFixed(2)}` : "-"}</dd>
+                <dt className="text-sm text-muted-foreground">
+                  Purchase Price
+                </dt>
+                <dd className="font-medium">
+                  {item.purchasePrice
+                    ? `$${item.purchasePrice.toFixed(2)}`
+                    : "-"}
+                </dd>
               </div>
               <div>
-                <dt className="text-sm text-muted-foreground">Warranty Expiry</dt>
+                <dt className="text-sm text-muted-foreground">
+                  Warranty Expiry
+                </dt>
                 <dd className="font-medium">
-                  {item.warrantyExpiry ? format(new Date(item.warrantyExpiry), "MMM d, yyyy") : "-"}
+                  {item.warrantyExpiry
+                    ? format(new Date(item.warrantyExpiry), "MMM d, yyyy")
+                    : "-"}
                 </dd>
               </div>
             </dl>
             {item.description && (
               <div className="mt-4 pt-4 border-t">
-                <dt className="text-sm text-muted-foreground mb-1">Description</dt>
+                <dt className="text-sm text-muted-foreground mb-1">
+                  Description
+                </dt>
                 <dd>{item.description}</dd>
               </div>
             )}
@@ -103,7 +115,9 @@ export function ItemDetails({ item, issuances }: ItemDetailsProps) {
           </CardHeader>
           <CardContent>
             {issuances.length === 0 ? (
-              <p className="text-muted-foreground text-sm">No issuance history</p>
+              <p className="text-muted-foreground text-sm">
+                No issuance history
+              </p>
             ) : (
               <div className="space-y-4">
                 {issuances.map((issuance) => (
@@ -114,10 +128,15 @@ export function ItemDetails({ item, issuances }: ItemDetailsProps) {
                     <div>
                       <p className="font-medium">{issuance.issuedTo.name}</p>
                       <p className="text-sm text-muted-foreground">
-                        Issued: {format(new Date(issuance.issuedAt), "MMM d, yyyy")}
+                        Issued:{" "}
+                        {format(new Date(issuance.issuedAt), "MMM d, yyyy")}
                       </p>
                     </div>
-                    <StatusBadge variant={issuance.status === "active" ? "info" : "secondary"}>
+                    <StatusBadge
+                      variant={
+                        issuance.status === "active" ? "info" : "secondary"
+                      }
+                    >
                       {issuance.status}
                     </StatusBadge>
                   </div>
@@ -150,7 +169,10 @@ export function ItemDetails({ item, issuances }: ItemDetailsProps) {
                 <div>
                   <p className="text-sm font-medium">Created</p>
                   <p className="text-xs text-muted-foreground">
-                    {format(new Date(item.createdAt), "MMM d, yyyy 'at' h:mm a")}
+                    {format(
+                      new Date(item.createdAt),
+                      "MMM d, yyyy 'at' h:mm a"
+                    )}
                   </p>
                 </div>
               </div>
@@ -159,7 +181,10 @@ export function ItemDetails({ item, issuances }: ItemDetailsProps) {
                 <div>
                   <p className="text-sm font-medium">Last Updated</p>
                   <p className="text-xs text-muted-foreground">
-                    {format(new Date(item.updatedAt), "MMM d, yyyy 'at' h:mm a")}
+                    {format(
+                      new Date(item.updatedAt),
+                      "MMM d, yyyy 'at' h:mm a"
+                    )}
                   </p>
                 </div>
               </div>
@@ -168,5 +193,5 @@ export function ItemDetails({ item, issuances }: ItemDetailsProps) {
         </Card>
       </div>
     </div>
-  )
+  );
 }

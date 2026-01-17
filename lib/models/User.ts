@@ -29,7 +29,6 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     { resource: "inventory", actions: ["create", "read", "update", "delete"] },
     { resource: "tickets", actions: ["create", "read", "update", "delete"] },
     { resource: "issuance", actions: ["create", "read", "update", "delete"] },
-    { resource: "repairs", actions: ["create", "read", "update", "delete"] },
     {
       resource: "departments",
       actions: ["create", "read", "update", "delete"],
@@ -41,7 +40,6 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     { resource: "inventory", actions: ["create", "read", "update"] },
     { resource: "tickets", actions: ["create", "read", "update"] },
     { resource: "issuance", actions: ["create", "read", "update"] },
-    { resource: "repairs", actions: ["create", "read", "update"] },
     { resource: "departments", actions: ["read"] },
     { resource: "employees", actions: ["read"] },
     { resource: "reports", actions: ["read"] },
@@ -50,7 +48,6 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     { resource: "inventory", actions: ["read"] },
     { resource: "tickets", actions: ["create", "read"] },
     { resource: "issuance", actions: ["read"] },
-    { resource: "repairs", actions: ["read"] },
     { resource: "departments", actions: ["read"] },
     { resource: "employees", actions: ["read"] },
   ],
@@ -60,7 +57,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
 export function hasPermission(
   role: UserRole,
   resource: string,
-  action: string
+  action: string,
 ): boolean {
   const permissions = ROLE_PERMISSIONS[role];
   const resourcePermission = permissions.find((p) => p.resource === resource);

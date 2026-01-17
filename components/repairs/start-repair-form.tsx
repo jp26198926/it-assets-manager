@@ -1,28 +1,55 @@
-"use client"
+"use client";
 
-import type React from "react"
+import type React from "react";
 
-import { useState, useTransition, useEffect } from "react"
-import { useRouter } from "next/navigation"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { createRepairRecord } from "@/lib/actions/repairs"
-import { createInventoryItem, getInventoryItemByBarcode } from "@/lib/actions/inventory"
-import type { Ticket, InventoryItem, ItemCategory } from "@/lib/models/types"
-import { Loader2, ArrowLeft, CheckCircle2, AlertTriangle, Plus } from "lucide-react"
-import Link from "next/link"
-import { BarcodeScanner } from "@/components/barcode/barcode-scanner"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
+import { useState, useTransition, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
+import { createRepairRecord } from "@/lib/actions/repairs";
+import {
+  createInventoryItem,
+  getInventoryItemByBarcode,
+} from "@/lib/actions/inventory";
+import type { Ticket, InventoryItem, ItemCategory } from "@/lib/models/types";
+import {
+  Loader2,
+  ArrowLeft,
+  CheckCircle2,
+  AlertTriangle,
+  Plus,
+} from "lucide-react";
+import Link from "next/link";
+import { BarcodeScanner } from "@/components/barcode/barcode-scanner";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 
 interface StartRepairFormProps {
-  tickets: Ticket[]
-  items: InventoryItem[]
-  preselectedTicketId?: string
-  preselectedBarcode?: string
+  tickets: Ticket[];
+  items: InventoryItem[];
+  preselectedTicketId?: string;
+  preselectedBarcode?: string;
 }
 
 const categories: { value: ItemCategory; label: string }[] = [
@@ -36,47 +63,54 @@ const categories: { value: ItemCategory; label: string }[] = [
   { value: "storage", label: "Storage Device" },
   { value: "accessory", label: "Accessory" },
   { value: "other", label: "Other" },
-]
+];
 
-export function StartRepairForm({ tickets, items, preselectedTicketId, preselectedBarcode }: StartRepairFormProps) {
-  const router = useRouter()
-  const [isPending, startTransition] = useTransition()
-  const [success, setSuccess] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+export function StartRepairForm({
+  tickets,
+  items,
+  preselectedTicketId,
+  preselectedBarcode,
+}: StartRepairFormProps) {
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+  const [success, setSuccess] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const [selectedTicketId, setSelectedTicketId] = useState(preselectedTicketId || "")
-  const [scannedItem, setScannedItem] = useState<InventoryItem | null>(null)
-  const [itemNotFound, setItemNotFound] = useState(false)
-  const [scannedBarcode, setScannedBarcode] = useState("")
-  const [showRegisterDialog, setShowRegisterDialog] = useState(false)
-  const [registerPending, setRegisterPending] = useState(false)
+  const [selectedTicketId, setSelectedTicketId] = useState(
+    preselectedTicketId || "",
+  );
+  const [scannedItem, setScannedItem] = useState<InventoryItem | null>(null);
+  const [itemNotFound, setItemNotFound] = useState(false);
+  const [scannedBarcode, setScannedBarcode] = useState("");
+  const [showRegisterDialog, setShowRegisterDialog] = useState(false);
+  const [registerPending, setRegisterPending] = useState(false);
 
   useEffect(() => {
     if (preselectedBarcode) {
-      handleBarcodeScanned(preselectedBarcode)
+      handleBarcodeScanned(preselectedBarcode);
     }
-  }, [preselectedBarcode])
+  }, [preselectedBarcode]);
 
   const handleBarcodeScanned = async (barcode: string) => {
-    setScannedBarcode(barcode)
-    const item = await getInventoryItemByBarcode(barcode)
+    setScannedBarcode(barcode);
+    const item = await getInventoryItemByBarcode(barcode);
 
     if (item) {
-      setScannedItem(item)
-      setItemNotFound(false)
-      setError(null)
+      setScannedItem(item);
+      setItemNotFound(false);
+      setError(null);
     } else {
-      setScannedItem(null)
-      setItemNotFound(true)
-      setShowRegisterDialog(true)
+      setScannedItem(null);
+      setItemNotFound(true);
+      setShowRegisterDialog(true);
     }
-  }
+  };
 
   const handleRegisterItem = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
-    setRegisterPending(true)
+    e.preventDefault();
+    setRegisterPending(true);
 
-    const formData = new FormData(e.currentTarget)
+    const formData = new FormData(e.currentTarget);
 
     const result = await createInventoryItem({
       name: formData.get("name") as string,
@@ -85,36 +119,44 @@ export function StartRepairForm({ tickets, items, preselectedTicketId, preselect
       model: formData.get("model") as string,
       serialNumber: formData.get("serialNumber") as string,
       notes: `Registered during repair intake. Original barcode scan: ${scannedBarcode}`,
-    })
+    });
 
     if (result.success && result.item) {
-      setScannedItem(result.item)
-      setItemNotFound(false)
-      setShowRegisterDialog(false)
+      setScannedItem(result.item);
+      setItemNotFound(false);
+      setShowRegisterDialog(false);
     } else {
-      setError(result.error || "Failed to register item")
+      setError(result.error || "Failed to register item");
     }
 
-    setRegisterPending(false)
-  }
+    setRegisterPending(false);
+  };
 
-  const selectedTicket = tickets.find((t) => t._id?.toString() === selectedTicketId)
+  const selectedTicket = tickets.find(
+    (t) => t._id?.toString() === selectedTicketId,
+  );
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
-    setError(null)
+    e.preventDefault();
+    setError(null);
 
     if (!selectedTicketId) {
-      setError("Please select a ticket")
-      return
+      setError("Please select a ticket");
+      return;
     }
 
     if (!scannedItem) {
-      setError("Please scan or register an item")
-      return
+      setError("Please scan or register an item");
+      return;
     }
 
-    const formData = new FormData(e.currentTarget)
+    const selectedTicketData = selectedTicket as any;
+    if (!selectedTicketData?.assignedToId) {
+      setError("Selected ticket must have an assigned technician");
+      return;
+    }
+
+    const formData = new FormData(e.currentTarget);
 
     startTransition(async () => {
       const result = await createRepairRecord({
@@ -123,18 +165,18 @@ export function StartRepairForm({ tickets, items, preselectedTicketId, preselect
         itemId: scannedItem._id!.toString(),
         itemBarcode: scannedItem.barcode,
         itemName: scannedItem.name,
-        technicianName: formData.get("technicianName") as string,
+        technicianId: selectedTicketData.assignedToId,
         diagnosis: formData.get("diagnosis") as string,
         notes: formData.get("notes") as string,
-      })
+      });
 
       if (result.success) {
-        setSuccess(true)
+        setSuccess(true);
       } else {
-        setError(result.error || "Failed to create repair record")
+        setError(result.error || "Failed to create repair record");
       }
-    })
-  }
+    });
+  };
 
   if (success) {
     return (
@@ -148,25 +190,29 @@ export function StartRepairForm({ tickets, items, preselectedTicketId, preselect
             </div>
             <div>
               <h2 className="text-xl font-semibold">Repair Record Created</h2>
-              <p className="text-muted-foreground mt-1">The item has been received for repair</p>
+              <p className="text-muted-foreground mt-1">
+                The item has been received for repair
+              </p>
             </div>
             <div className="flex gap-4 justify-center">
               <Button
                 variant="outline"
                 onClick={() => {
-                  setSuccess(false)
-                  setSelectedTicketId("")
-                  setScannedItem(null)
+                  setSuccess(false);
+                  setSelectedTicketId("");
+                  setScannedItem(null);
                 }}
               >
                 Start Another Repair
               </Button>
-              <Button onClick={() => router.push("/repairs")}>View All Repairs</Button>
+              <Button onClick={() => router.push("/repairs")}>
+                View All Repairs
+              </Button>
             </div>
           </div>
         </CardContent>
       </Card>
-    )
+    );
   }
 
   return (
@@ -176,18 +222,26 @@ export function StartRepairForm({ tickets, items, preselectedTicketId, preselect
           <Card>
             <CardHeader>
               <CardTitle className="text-lg">Step 1: Select Ticket</CardTitle>
-              <CardDescription>Choose the support ticket for this repair</CardDescription>
+              <CardDescription>
+                Choose the support ticket for this repair
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
                 <Label>Support Ticket *</Label>
-                <Select value={selectedTicketId} onValueChange={setSelectedTicketId}>
+                <Select
+                  value={selectedTicketId}
+                  onValueChange={setSelectedTicketId}
+                >
                   <SelectTrigger className="bg-secondary">
                     <SelectValue placeholder="Select a ticket" />
                   </SelectTrigger>
                   <SelectContent>
                     {tickets.map((ticket) => (
-                      <SelectItem key={ticket._id?.toString()} value={ticket._id!.toString()}>
+                      <SelectItem
+                        key={ticket._id?.toString()}
+                        value={ticket._id!.toString()}
+                      >
                         {ticket.ticketNumber} - {ticket.title}
                       </SelectItem>
                     ))}
@@ -198,12 +252,33 @@ export function StartRepairForm({ tickets, items, preselectedTicketId, preselect
               {selectedTicket && (
                 <div className="p-4 rounded-lg bg-secondary/50 space-y-2">
                   <p className="font-medium">{selectedTicket.title}</p>
-                  <p className="text-sm text-muted-foreground">{selectedTicket.description}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {selectedTicket.description}
+                  </p>
                   <p className="text-sm">
-                    Reporter: {selectedTicket.reportedBy.name} ({selectedTicket.reportedBy.email})
+                    Reporter: {selectedTicket.reportedBy.name} (
+                    {selectedTicket.reportedBy.email})
                   </p>
                   {selectedTicket.itemBarcode && (
-                    <p className="text-sm font-mono">Item: {selectedTicket.itemBarcode}</p>
+                    <p className="text-sm font-mono">
+                      Item: {selectedTicket.itemBarcode}
+                    </p>
+                  )}
+                  {(selectedTicket as any).assignedUser ? (
+                    <p className="text-sm">
+                      <span className="text-muted-foreground">Technician:</span>{" "}
+                      <span className="font-medium">
+                        {(selectedTicket as any).assignedUser.name}
+                      </span>
+                    </p>
+                  ) : (selectedTicket as any).assignedToId ? (
+                    <p className="text-sm text-warning">
+                      ⚠️ Assigned user data not loaded
+                    </p>
+                  ) : (
+                    <p className="text-sm text-warning">
+                      ⚠️ This ticket has no assigned technician
+                    </p>
                   )}
                 </div>
               )}
@@ -213,12 +288,17 @@ export function StartRepairForm({ tickets, items, preselectedTicketId, preselect
           <Card>
             <CardHeader>
               <CardTitle className="text-lg">Step 2: Scan Item</CardTitle>
-              <CardDescription>Scan the barcode to verify or register the item</CardDescription>
+              <CardDescription>
+                Scan the barcode to verify or register the item
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
                 <Label>Scan Barcode</Label>
-                <BarcodeScanner onScan={handleBarcodeScanned} placeholder="Enter or scan item barcode..." />
+                <BarcodeScanner
+                  onScan={handleBarcodeScanned}
+                  placeholder="Enter or scan item barcode..."
+                />
               </div>
 
               {scannedItem && (
@@ -228,8 +308,12 @@ export function StartRepairForm({ tickets, items, preselectedTicketId, preselect
                     <div>
                       <p className="font-medium">Item Found</p>
                       <p className="text-sm">{scannedItem.name}</p>
-                      <p className="text-sm text-muted-foreground font-mono">{scannedItem.barcode}</p>
-                      <p className="text-sm text-muted-foreground">Status: {scannedItem.status.replace("_", " ")}</p>
+                      <p className="text-sm text-muted-foreground font-mono">
+                        {scannedItem.barcode}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        Status: {scannedItem.status.replace("_", " ")}
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -242,7 +326,8 @@ export function StartRepairForm({ tickets, items, preselectedTicketId, preselect
                     <div>
                       <p className="font-medium">Item Not Found</p>
                       <p className="text-sm text-muted-foreground">
-                        Barcode "{scannedBarcode}" is not registered in the system.
+                        Barcode "{scannedBarcode}" is not registered in the
+                        system.
                       </p>
                       <Button
                         type="button"
@@ -268,17 +353,6 @@ export function StartRepairForm({ tickets, items, preselectedTicketId, preselect
             </CardHeader>
             <CardContent>
               <div className="grid gap-4 sm:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="technicianName">Technician Name *</Label>
-                  <Input
-                    id="technicianName"
-                    name="technicianName"
-                    required
-                    className="bg-secondary"
-                    placeholder="Your name"
-                  />
-                </div>
-
                 <div className="space-y-2 sm:col-span-2">
                   <Label htmlFor="diagnosis">Initial Diagnosis</Label>
                   <Textarea
@@ -291,7 +365,12 @@ export function StartRepairForm({ tickets, items, preselectedTicketId, preselect
 
                 <div className="space-y-2 sm:col-span-2">
                   <Label htmlFor="notes">Notes</Label>
-                  <Textarea id="notes" name="notes" className="bg-secondary" placeholder="Any additional notes" />
+                  <Textarea
+                    id="notes"
+                    name="notes"
+                    className="bg-secondary"
+                    placeholder="Any additional notes"
+                  />
                 </div>
               </div>
             </CardContent>
@@ -311,7 +390,10 @@ export function StartRepairForm({ tickets, items, preselectedTicketId, preselect
               Cancel
             </Button>
           </Link>
-          <Button type="submit" disabled={isPending || !selectedTicketId || !scannedItem}>
+          <Button
+            type="submit"
+            disabled={isPending || !selectedTicketId || !scannedItem}
+          >
             {isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
             Receive Item for Repair
           </Button>
@@ -326,7 +408,13 @@ export function StartRepairForm({ tickets, items, preselectedTicketId, preselect
           <form onSubmit={handleRegisterItem} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="reg-name">Item Name *</Label>
-              <Input id="reg-name" name="name" required className="bg-secondary" placeholder="e.g., Dell Laptop" />
+              <Input
+                id="reg-name"
+                name="name"
+                required
+                className="bg-secondary"
+                placeholder="e.g., Dell Laptop"
+              />
             </div>
 
             <div className="space-y-2">
@@ -348,25 +436,46 @@ export function StartRepairForm({ tickets, items, preselectedTicketId, preselect
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="reg-brand">Brand</Label>
-                <Input id="reg-brand" name="brand" className="bg-secondary" placeholder="e.g., Dell" />
+                <Input
+                  id="reg-brand"
+                  name="brand"
+                  className="bg-secondary"
+                  placeholder="e.g., Dell"
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="reg-model">Model</Label>
-                <Input id="reg-model" name="model" className="bg-secondary" placeholder="e.g., Latitude 5520" />
+                <Input
+                  id="reg-model"
+                  name="model"
+                  className="bg-secondary"
+                  placeholder="e.g., Latitude 5520"
+                />
               </div>
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="reg-serial">Serial Number</Label>
-              <Input id="reg-serial" name="serialNumber" className="bg-secondary" placeholder="Enter serial number" />
+              <Input
+                id="reg-serial"
+                name="serialNumber"
+                className="bg-secondary"
+                placeholder="Enter serial number"
+              />
             </div>
 
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setShowRegisterDialog(false)}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowRegisterDialog(false)}
+              >
                 Cancel
               </Button>
               <Button type="submit" disabled={registerPending}>
-                {registerPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                {registerPending && (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                )}
                 Register & Continue
               </Button>
             </DialogFooter>
@@ -374,5 +483,5 @@ export function StartRepairForm({ tickets, items, preselectedTicketId, preselect
         </DialogContent>
       </Dialog>
     </>
-  )
+  );
 }

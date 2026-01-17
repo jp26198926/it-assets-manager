@@ -101,7 +101,7 @@ export default function AdminPage() {
 
 - ✅ Create, read, update inventory
 - ✅ Create, read, update tickets
-- ✅ Manage issuance & repairs
+- ✅ Manage issuance
 - ❌ Cannot delete resources
 - ❌ Cannot manage users
 
@@ -109,7 +109,7 @@ export default function AdminPage() {
 
 - ✅ View inventory
 - ✅ Create & view tickets
-- ✅ View issuance & repairs
+- ✅ View issuance
 - ❌ Cannot create/update/delete resources
 - ❌ Cannot access admin features
 
@@ -188,7 +188,6 @@ SESSION_SECRET=your_32_char_secret
 | Inventory   | CRUD  | CRU     | R        |
 | Tickets     | CRUD  | CRU     | CR       |
 | Issuance    | CRUD  | CRU     | R        |
-| Repairs     | CRUD  | CRU     | R        |
 | Users       | CRUD  | -       | -        |
 | Departments | CRUD  | R       | R        |
 | Employees   | CRUD  | R       | R        |

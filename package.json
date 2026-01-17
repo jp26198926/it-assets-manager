@@ -9,7 +9,8 @@
     "start": "next start",
     "seed:users": "tsx scripts/seed-users.ts",
     "migrate:employee-departments": "tsx scripts/migrate-employee-departments.ts",
-    "migrate:employee-names": "tsx scripts/migrate-employee-names.ts"
+    "migrate:employee-names": "tsx scripts/migrate-employee-names.ts",
+    "migrate:inventory-categories": "tsx scripts/migrate-inventory-categories.ts"
   },
   "dependencies": {
     "@aws-sdk/credential-providers": "latest",

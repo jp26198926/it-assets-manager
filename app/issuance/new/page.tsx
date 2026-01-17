@@ -3,12 +3,14 @@ import { PageHeader } from "@/components/ui/page-header";
 import { IssueItemForm } from "@/components/issuance/issue-item-form";
 import { getInventoryItems } from "@/lib/actions/inventory";
 import { getEmployees, getDepartments } from "@/lib/actions/employees";
+import { getSession } from "@/lib/actions/auth";
 
 export default async function NewIssuancePage() {
-  const [items, employees, departmentsResult] = await Promise.all([
+  const [items, employees, departmentsResult, session] = await Promise.all([
     getInventoryItems({ status: "in_stock" }),
     getEmployees(),
     getDepartments(),
+    getSession(),
   ]);
   const departments =
     departmentsResult.success && departmentsResult.data
@@ -27,6 +29,7 @@ export default async function NewIssuancePage() {
           availableItems={items}
           employees={employees}
           departments={departments}
+          currentUserName={session.name || session.username || ""}
         />
       </div>
     </MainLayout>

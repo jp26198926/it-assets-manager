@@ -1,31 +1,33 @@
-"use server"
+"use server";
 
-import { ObjectId } from "mongodb"
-import { getDatabase } from "@/lib/mongodb"
-import type { Issuance, InventoryItem } from "@/lib/models/types"
-import { revalidatePath } from "next/cache"
+import { ObjectId } from "mongodb";
+import { getDatabase } from "@/lib/mongodb";
+import type { Issuance, InventoryItem } from "@/lib/models/types";
+import { revalidatePath } from "next/cache";
 
 export async function createIssuance(data: {
-  itemId: string
-  issuedToType: "employee" | "department"
-  issuedToId: string
-  issuedToName: string
-  issuedBy: string
-  expectedReturn?: string
-  notes?: string
+  itemId: string;
+  issuedToType: "employee" | "department";
+  issuedToId: string;
+  issuedToName: string;
+  issuedBy: string;
+  expectedReturn?: string;
+  notes?: string;
 }): Promise<{ success: boolean; issuance?: Issuance; error?: string }> {
   try {
-    const db = await getDatabase()
-    const issuanceCollection = db.collection<Issuance>("issuances")
-    const inventoryCollection = db.collection<InventoryItem>("inventory")
+    const db = await getDatabase();
+    const issuanceCollection = db.collection<Issuance>("issuances");
+    const inventoryCollection = db.collection<InventoryItem>("inventory");
 
-    const item = await inventoryCollection.findOne({ _id: new ObjectId(data.itemId) })
+    const item = await inventoryCollection.findOne({
+      _id: new ObjectId(data.itemId),
+    });
     if (!item) {
-      return { success: false, error: "Item not found" }
+      return { success: false, error: "Item not found" };
     }
 
     if (item.status !== "in_stock") {
-      return { success: false, error: "Item is not available for issuance" }
+      return { success: false, error: "Item is not available for issuance" };
     }
 
     const issuance: Issuance = {
@@ -39,70 +41,99 @@ export async function createIssuance(data: {
       },
       issuedBy: data.issuedBy,
       issuedAt: new Date(),
-      expectedReturn: data.expectedReturn ? new Date(data.expectedReturn) : undefined,
+      expectedReturn: data.expectedReturn
+        ? new Date(data.expectedReturn)
+        : undefined,
       notes: data.notes,
       status: "active",
-    }
+    };
 
-    const result = await issuanceCollection.insertOne(issuance)
-    issuance._id = result.insertedId
+    const result = await issuanceCollection.insertOne(issuance);
+    issuance._id = result.insertedId;
 
     await inventoryCollection.updateOne(
       { _id: new ObjectId(data.itemId) },
-      { $set: { status: "issued", updatedAt: new Date() } },
-    )
+      { $set: { status: "issued", updatedAt: new Date() } }
+    );
 
-    revalidatePath("/issuance")
-    revalidatePath("/inventory")
-    return { success: true, issuance }
+    revalidatePath("/issuance");
+    revalidatePath("/inventory");
+    return { success: true, issuance };
   } catch (error) {
-    console.error("Error creating issuance:", error)
-    return { success: false, error: "Failed to create issuance" }
+    console.error("Error creating issuance:", error);
+    return { success: false, error: "Failed to create issuance" };
   }
 }
 
-export async function returnItem(issuanceId: string): Promise<{ success: boolean; error?: string }> {
+export async function returnItem(
+  issuanceId: string,
+  data: {
+    returnRemarks?: string;
+    returnStatus: "good" | "damaged" | "needs_repair" | "beyond_repair";
+  }
+): Promise<{ success: boolean; error?: string }> {
   try {
-    const db = await getDatabase()
-    const issuanceCollection = db.collection<Issuance>("issuances")
-    const inventoryCollection = db.collection<InventoryItem>("inventory")
+    const db = await getDatabase();
+    const issuanceCollection = db.collection<Issuance>("issuances");
+    const inventoryCollection = db.collection<InventoryItem>("inventory");
 
-    const issuance = await issuanceCollection.findOne({ _id: new ObjectId(issuanceId) })
+    const issuance = await issuanceCollection.findOne({
+      _id: new ObjectId(issuanceId),
+    });
     if (!issuance) {
-      return { success: false, error: "Issuance record not found" }
+      return { success: false, error: "Issuance record not found" };
     }
 
+    // Update issuance record with return information
     await issuanceCollection.updateOne(
       { _id: new ObjectId(issuanceId) },
-      { $set: { status: "returned", returnedAt: new Date() } },
-    )
+      {
+        $set: {
+          status: "returned",
+          returnedAt: new Date(),
+          returnRemarks: data.returnRemarks,
+          returnStatus: data.returnStatus,
+        },
+      }
+    );
+
+    // Determine inventory item status based on return status
+    let itemStatus: "in_stock" | "under_repair" | "beyond_repair" = "in_stock";
+    if (
+      data.returnStatus === "needs_repair" ||
+      data.returnStatus === "damaged"
+    ) {
+      itemStatus = "under_repair";
+    } else if (data.returnStatus === "beyond_repair") {
+      itemStatus = "beyond_repair";
+    }
 
     await inventoryCollection.updateOne(
       { _id: issuance.itemId },
-      { $set: { status: "in_stock", updatedAt: new Date() } },
-    )
+      { $set: { status: itemStatus, updatedAt: new Date() } }
+    );
 
-    revalidatePath("/issuance")
-    revalidatePath("/inventory")
-    return { success: true }
+    revalidatePath("/issuance");
+    revalidatePath("/inventory");
+    return { success: true };
   } catch (error) {
-    console.error("Error returning item:", error)
-    return { success: false, error: "Failed to return item" }
+    console.error("Error returning item:", error);
+    return { success: false, error: "Failed to return item" };
   }
 }
 
 export async function getIssuances(filters?: {
-  status?: "active" | "returned"
-  search?: string
+  status?: "active" | "returned";
+  search?: string;
 }): Promise<Issuance[]> {
   try {
-    const db = await getDatabase()
-    const collection = db.collection<Issuance>("issuances")
+    const db = await getDatabase();
+    const collection = db.collection<Issuance>("issuances");
 
-    const query: Record<string, unknown> = {}
+    const query: Record<string, unknown> = {};
 
     if (filters?.status) {
-      query.status = filters.status
+      query.status = filters.status;
     }
 
     if (filters?.search) {
@@ -110,28 +141,31 @@ export async function getIssuances(filters?: {
         { itemName: { $regex: filters.search, $options: "i" } },
         { itemBarcode: { $regex: filters.search, $options: "i" } },
         { "issuedTo.name": { $regex: filters.search, $options: "i" } },
-      ]
+      ];
     }
 
-    const issuances = await collection.find(query).sort({ issuedAt: -1 }).toArray()
-    return JSON.parse(JSON.stringify(issuances))
+    const issuances = await collection
+      .find(query)
+      .sort({ issuedAt: -1 })
+      .toArray();
+    return JSON.parse(JSON.stringify(issuances));
   } catch (error) {
-    console.error("Error fetching issuances:", error)
-    return []
+    console.error("Error fetching issuances:", error);
+    return [];
   }
 }
 
 export async function getIssuancesByItem(itemId: string): Promise<Issuance[]> {
   try {
-    const db = await getDatabase()
-    const collection = db.collection<Issuance>("issuances")
+    const db = await getDatabase();
+    const collection = db.collection<Issuance>("issuances");
     const issuances = await collection
       .find({ itemId: new ObjectId(itemId) })
       .sort({ issuedAt: -1 })
-      .toArray()
-    return JSON.parse(JSON.stringify(issuances))
+      .toArray();
+    return JSON.parse(JSON.stringify(issuances));
   } catch (error) {
-    console.error("Error fetching issuances:", error)
-    return []
+    console.error("Error fetching issuances:", error);
+    return [];
   }
 }

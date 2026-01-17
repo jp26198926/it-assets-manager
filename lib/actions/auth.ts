@@ -127,3 +127,31 @@ export async function requireRole(allowedRoles: UserRole[]) {
   }
   return user;
 }
+
+// Get all active users for ticket assignment
+export async function getTechniciansAndAdmins() {
+  try {
+    const { db } = await connectToDatabase();
+    const users = await db
+      .collection<User>("users")
+      .find({
+        isActive: true,
+      })
+      .sort({ name: 1 })
+      .toArray();
+
+    // Serialize for client components
+    return {
+      success: true,
+      data: users.map((user) => ({
+        _id: user._id!.toString(),
+        name: user.name,
+        email: user.email,
+        role: user.role,
+      })),
+    };
+  } catch (error) {
+    console.error("Error fetching users:", error);
+    return { success: false, error: "Failed to fetch users" };
+  }
+}

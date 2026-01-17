@@ -1,69 +1,78 @@
-"use client"
+"use client";
 
-import type React from "react"
+import type React from "react";
 
-import { useState, useTransition } from "react"
-import { useRouter } from "next/navigation"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { createInventoryItem } from "@/lib/actions/inventory"
-import type { ItemCategory } from "@/lib/models/types"
-import { BarcodeDisplay } from "@/components/barcode/barcode-display"
-import { CheckCircle2, Loader2 } from "lucide-react"
-
-const categories: { value: ItemCategory; label: string }[] = [
-  { value: "laptop", label: "Laptop" },
-  { value: "desktop", label: "Desktop" },
-  { value: "monitor", label: "Monitor" },
-  { value: "keyboard", label: "Keyboard" },
-  { value: "mouse", label: "Mouse" },
-  { value: "printer", label: "Printer" },
-  { value: "network", label: "Network Device" },
-  { value: "storage", label: "Storage Device" },
-  { value: "accessory", label: "Accessory" },
-  { value: "other", label: "Other" },
-]
+import { useState, useTransition, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { createInventoryItem } from "@/lib/actions/inventory";
+import { getCategories } from "@/lib/actions/categories";
+import type { CategorySerialized } from "@/lib/models/types";
+import { BarcodeDisplay } from "@/components/barcode/barcode-display";
+import { CheckCircle2, Loader2 } from "lucide-react";
 
 export function ReceiveItemForm() {
-  const router = useRouter()
-  const [isPending, startTransition] = useTransition()
-  const [success, setSuccess] = useState(false)
-  const [generatedBarcode, setGeneratedBarcode] = useState<string | null>(null)
-  const [error, setError] = useState<string | null>(null)
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+  const [success, setSuccess] = useState(false);
+  const [generatedBarcode, setGeneratedBarcode] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [categories, setCategories] = useState<CategorySerialized[]>([]);
+  const [loadingCategories, setLoadingCategories] = useState(true);
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      const result = await getCategories();
+      if (result.success && result.data) {
+        setCategories(result.data);
+      }
+      setLoadingCategories(false);
+    };
+    fetchCategories();
+  }, []);
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
-    setError(null)
+    e.preventDefault();
+    setError(null);
 
-    const formData = new FormData(e.currentTarget)
+    const formData = new FormData(e.currentTarget);
 
     startTransition(async () => {
       const result = await createInventoryItem({
         name: formData.get("name") as string,
         description: formData.get("description") as string,
-        category: formData.get("category") as ItemCategory,
+        categoryId: formData.get("categoryId") as string,
         brand: formData.get("brand") as string,
         model: formData.get("model") as string,
         serialNumber: formData.get("serialNumber") as string,
         purchaseDate: formData.get("purchaseDate") as string,
-        purchasePrice: formData.get("purchasePrice") ? Number(formData.get("purchasePrice")) : undefined,
+        purchasePrice: formData.get("purchasePrice")
+          ? Number(formData.get("purchasePrice"))
+          : undefined,
         warrantyExpiry: formData.get("warrantyExpiry") as string,
         location: formData.get("location") as string,
         notes: formData.get("notes") as string,
-      })
+      });
 
       if (result.success && result.item) {
-        setSuccess(true)
-        setGeneratedBarcode(result.item.barcode)
+        setSuccess(true);
+        setGeneratedBarcode(result.item.barcode);
       } else {
-        setError(result.error || "Failed to create item")
+        setError(result.error || "Failed to create item");
       }
-    })
-  }
+    });
+  };
 
   if (success && generatedBarcode) {
     return (
@@ -76,8 +85,12 @@ export function ReceiveItemForm() {
               </div>
             </div>
             <div>
-              <h2 className="text-xl font-semibold">Item Registered Successfully</h2>
-              <p className="text-muted-foreground mt-1">A barcode has been generated for this item</p>
+              <h2 className="text-xl font-semibold">
+                Item Registered Successfully
+              </h2>
+              <p className="text-muted-foreground mt-1">
+                A barcode has been generated for this item
+              </p>
             </div>
             <div className="flex flex-col items-center gap-4 py-4">
               <BarcodeDisplay value={generatedBarcode} type="qr" size={200} />
@@ -89,20 +102,23 @@ export function ReceiveItemForm() {
               </Button>
               <Button
                 onClick={() => {
-                  setSuccess(false)
-                  setGeneratedBarcode(null)
+                  setSuccess(false);
+                  setGeneratedBarcode(null);
                 }}
               >
                 Register Another Item
               </Button>
-              <Button variant="secondary" onClick={() => router.push("/inventory")}>
+              <Button
+                variant="secondary"
+                onClick={() => router.push("/inventory")}
+              >
                 View Inventory
               </Button>
             </div>
           </div>
         </CardContent>
       </Card>
-    )
+    );
   }
 
   return (
@@ -115,19 +131,31 @@ export function ReceiveItemForm() {
           <CardContent className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="name">Item Name *</Label>
-              <Input id="name" name="name" required className="bg-secondary" placeholder="e.g., Dell Latitude 5520" />
+              <Input
+                id="name"
+                name="name"
+                required
+                className="bg-secondary"
+                placeholder="e.g., Dell Latitude 5520"
+              />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="category">Category *</Label>
-              <Select name="category" required>
+              <Label htmlFor="categoryId">Category *</Label>
+              <Select name="categoryId" required disabled={loadingCategories}>
                 <SelectTrigger className="bg-secondary">
-                  <SelectValue placeholder="Select category" />
+                  <SelectValue
+                    placeholder={
+                      loadingCategories
+                        ? "Loading categories..."
+                        : "Select category"
+                    }
+                  />
                 </SelectTrigger>
                 <SelectContent>
                   {categories.map((cat) => (
-                    <SelectItem key={cat.value} value={cat.value}>
-                      {cat.label}
+                    <SelectItem key={cat._id} value={cat._id!}>
+                      {cat.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -137,17 +165,32 @@ export function ReceiveItemForm() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="brand">Brand</Label>
-                <Input id="brand" name="brand" className="bg-secondary" placeholder="e.g., Dell" />
+                <Input
+                  id="brand"
+                  name="brand"
+                  className="bg-secondary"
+                  placeholder="e.g., Dell"
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="model">Model</Label>
-                <Input id="model" name="model" className="bg-secondary" placeholder="e.g., Latitude 5520" />
+                <Input
+                  id="model"
+                  name="model"
+                  className="bg-secondary"
+                  placeholder="e.g., Latitude 5520"
+                />
               </div>
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="serialNumber">Serial Number</Label>
-              <Input id="serialNumber" name="serialNumber" className="bg-secondary" placeholder="Enter serial number" />
+              <Input
+                id="serialNumber"
+                name="serialNumber"
+                className="bg-secondary"
+                placeholder="Enter serial number"
+              />
             </div>
 
             <div className="space-y-2">
@@ -169,7 +212,12 @@ export function ReceiveItemForm() {
           <CardContent className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="purchaseDate">Purchase Date</Label>
-              <Input id="purchaseDate" name="purchaseDate" type="date" className="bg-secondary" />
+              <Input
+                id="purchaseDate"
+                name="purchaseDate"
+                type="date"
+                className="bg-secondary"
+              />
             </div>
 
             <div className="space-y-2">
@@ -186,17 +234,32 @@ export function ReceiveItemForm() {
 
             <div className="space-y-2">
               <Label htmlFor="warrantyExpiry">Warranty Expiry</Label>
-              <Input id="warrantyExpiry" name="warrantyExpiry" type="date" className="bg-secondary" />
+              <Input
+                id="warrantyExpiry"
+                name="warrantyExpiry"
+                type="date"
+                className="bg-secondary"
+              />
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="location">Location</Label>
-              <Input id="location" name="location" className="bg-secondary" placeholder="e.g., IT Storage Room A" />
+              <Input
+                id="location"
+                name="location"
+                className="bg-secondary"
+                placeholder="e.g., IT Storage Room A"
+              />
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="notes">Notes</Label>
-              <Textarea id="notes" name="notes" className="bg-secondary" placeholder="Any additional notes" />
+              <Textarea
+                id="notes"
+                name="notes"
+                className="bg-secondary"
+                placeholder="Any additional notes"
+              />
             </div>
           </CardContent>
         </Card>
@@ -218,5 +281,5 @@ export function ReceiveItemForm() {
         </Button>
       </div>
     </form>
-  )
+  );
 }
