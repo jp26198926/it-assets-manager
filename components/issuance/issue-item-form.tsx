@@ -2,7 +2,7 @@
 
 import type React from "react";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,7 +19,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { createIssuance } from "@/lib/actions/issuance";
 import type {
-  InventoryItem,
+  InventoryItemWithCategorySerialized,
   EmployeeWithDepartmentSerialized,
   Department,
 } from "@/lib/models/types";
@@ -29,10 +29,11 @@ import { BarcodeScanner } from "@/components/barcode/barcode-scanner";
 import { getInventoryItemByBarcode } from "@/lib/actions/inventory";
 
 interface IssueItemFormProps {
-  availableItems: InventoryItem[];
+  availableItems: InventoryItemWithCategorySerialized[];
   employees: EmployeeWithDepartmentSerialized[];
   departments: Department[];
   currentUserName: string;
+  preSelectedItemId?: string;
 }
 
 export function IssueItemForm({
@@ -40,24 +41,56 @@ export function IssueItemForm({
   employees,
   departments,
   currentUserName,
+  preSelectedItemId,
 }: IssueItemFormProps) {
   const router = useRouter();
+  
+  // Find pre-selected item from availableItems
+  const preSelectedItem = useMemo(() => {
+    if (preSelectedItemId && availableItems.length > 0) {
+      return availableItems.find((item) => item._id === preSelectedItemId) || null;
+    }
+    return null;
+  }, [preSelectedItemId, availableItems]);
+  
   const [isPending, startTransition] = useTransition();
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [selectedItem, setSelectedItem] = useState<string>("");
+  const [selectedItem, setSelectedItem] = useState<string>(preSelectedItemId || "");
   const [issuedToType, setIssuedToType] = useState<"employee" | "department">(
-    "employee"
+    "employee",
   );
   const [selectedRecipient, setSelectedRecipient] = useState<string>("");
-  const [scannedItem, setScannedItem] = useState<InventoryItem | null>(null);
+  const [scannedItem, setScannedItem] =
+    useState<InventoryItemWithCategorySerialized | null>(preSelectedItem);
+
+  // Sync when preSelectedItem changes
+  useEffect(() => {
+    if (preSelectedItem && !scannedItem) {
+      setSelectedItem(preSelectedItemId || "");
+      setScannedItem(preSelectedItem);
+    }
+  }, [preSelectedItem, preSelectedItemId, scannedItem]);
 
   const handleBarcodeScanned = async (barcode: string) => {
     const item = await getInventoryItemByBarcode(barcode);
     if (item) {
       if (item.status === "in_stock") {
-        setScannedItem(item);
-        setSelectedItem(item._id!.toString());
+        const itemId = item._id?.toString() || "";
+        setSelectedItem(itemId);
+        // Convert to match the serialized format for display
+        setScannedItem({
+          ...item,
+          _id: itemId,
+          categoryId: item.categoryId?.toString() || "",
+          createdAt:
+            item.createdAt?.toISOString?.() || new Date().toISOString(),
+          updatedAt:
+            item.updatedAt?.toISOString?.() || new Date().toISOString(),
+          purchaseDate: item.purchaseDate?.toISOString?.(),
+          warrantyExpiry: item.warrantyExpiry?.toISOString?.(),
+          category: { _id: "", name: "Unknown", code: "" },
+        } as InventoryItemWithCategorySerialized);
         setError(null);
       } else {
         setError(`Item ${barcode} is not available (Status: ${item.status})`);
@@ -72,7 +105,7 @@ export function IssueItemForm({
   const getRecipientName = () => {
     if (issuedToType === "employee") {
       const employee = employees.find(
-        (e) => e._id?.toString() === selectedRecipient
+        (e) => e._id?.toString() === selectedRecipient,
       );
       if (!employee) return "";
       return `${employee.firstName} ${
@@ -80,7 +113,7 @@ export function IssueItemForm({
       }${employee.lastName}`;
     } else {
       const department = departments.find(
-        (d) => d._id?.toString() === selectedRecipient
+        (d) => d._id?.toString() === selectedRecipient,
       );
       return department?.name || "";
     }
@@ -91,7 +124,7 @@ export function IssueItemForm({
     setError(null);
 
     const formData = new FormData(e.currentTarget);
-    const itemId = selectedItem || scannedItem?._id?.toString();
+    const itemId = selectedItem || scannedItem?._id;
 
     if (!itemId) {
       setError("Please select or scan an item");
@@ -212,10 +245,7 @@ export function IssueItemForm({
                 </SelectTrigger>
                 <SelectContent>
                   {availableItems.map((item) => (
-                    <SelectItem
-                      key={item._id?.toString()}
-                      value={item._id!.toString()}
-                    >
+                    <SelectItem key={item._id} value={item._id!}>
                       {item.name} ({item.barcode})
                     </SelectItem>
                   ))}

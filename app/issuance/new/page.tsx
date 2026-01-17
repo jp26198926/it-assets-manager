@@ -5,7 +5,12 @@ import { getInventoryItems } from "@/lib/actions/inventory";
 import { getEmployees, getDepartments } from "@/lib/actions/employees";
 import { getSession } from "@/lib/actions/auth";
 
-export default async function NewIssuancePage() {
+export default async function NewIssuancePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ itemId?: string }>;
+}) {
+  const params = await searchParams;
   const [items, employees, departmentsResult, session] = await Promise.all([
     getInventoryItems({ status: "in_stock" }),
     getEmployees(),
@@ -30,6 +35,7 @@ export default async function NewIssuancePage() {
           employees={employees}
           departments={departments}
           currentUserName={session.name || session.username || ""}
+          preSelectedItemId={params.itemId}
         />
       </div>
     </MainLayout>

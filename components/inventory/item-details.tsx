@@ -3,6 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { BarcodeDisplay } from "@/components/barcode/barcode-display";
+import { Button } from "@/components/ui/button";
 import type {
   InventoryItemWithCategorySerialized,
   Issuance,
@@ -12,6 +13,7 @@ import type {
 } from "@/lib/models/types";
 import { format } from "date-fns";
 import Link from "next/link";
+import { Package } from "lucide-react";
 
 const statusVariants: Record<
   ItemStatus,
@@ -48,12 +50,22 @@ export function ItemDetails({ item, issuances, tickets }: ItemDetailsProps) {
       <div className="lg:col-span-2 space-y-6">
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg flex items-center justify-between">
-              Item Information
-              <StatusBadge variant={statusVariants[item.status]}>
-                {item.status.replace("_", " ")}
-              </StatusBadge>
-            </CardTitle>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <CardTitle className="text-lg">Item Information</CardTitle>
+                <StatusBadge variant={statusVariants[item.status]}>
+                  {item.status.replace("_", " ")}
+                </StatusBadge>
+              </div>
+              {item.status === "in_stock" && (
+                <Link href={`/issuance/new?itemId=${item._id}`}>
+                  <Button size="sm">
+                    <Package className="h-4 w-4 mr-2" />
+                    Issue Item
+                  </Button>
+                </Link>
+              )}
+            </div>
           </CardHeader>
           <CardContent>
             <dl className="grid gap-4 sm:grid-cols-2">
