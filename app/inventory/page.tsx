@@ -13,8 +13,8 @@ export default async function InventoryPage() {
   const userResult = await getUserProfile();
   const canCreate =
     userResult.success &&
-    userResult.user &&
-    hasPermission(userResult.user.role as any, "inventory", "create");
+    userResult.data &&
+    hasPermission(userResult.data.role as any, "inventory", "create");
 
   return (
     <MainLayout>
@@ -37,7 +37,7 @@ export default async function InventoryPage() {
         <InventoryList
           initialItems={items}
           userRole={
-            userResult.success && userResult.user ? userResult.user.role : null
+            userResult.success && userResult.data ? userResult.data.role : null
           }
         />
       </div>

@@ -12,11 +12,29 @@ import { revalidatePath } from "next/cache";
 import { requireAuth } from "./auth";
 import { hasPermission } from "../models/User";
 
-function generateBarcode(): string {
-  const prefix = "IT";
-  const timestamp = Date.now().toString(36).toUpperCase();
-  const random = Math.random().toString(36).substring(2, 6).toUpperCase();
-  return `${prefix}-${timestamp}-${random}`;
+async function generateBarcode(): Promise<string> {
+  const db = await getDatabase();
+  const collection = db.collection<InventoryItem>("inventory");
+
+  const year = new Date().getFullYear().toString().slice(-2);
+
+  // Find the highest barcode number for this year
+  const latestItem = await collection
+    .find({ barcode: { $regex: `^IT${year}` } })
+    .sort({ barcode: -1 })
+    .limit(1)
+    .toArray();
+
+  let nextNumber = 1;
+  if (latestItem.length > 0) {
+    const match = latestItem[0].barcode.match(/IT\d{2}(\d{5})$/);
+    if (match) {
+      nextNumber = parseInt(match[1], 10) + 1;
+    }
+  }
+
+  const paddedNumber = nextNumber.toString().padStart(5, "0");
+  return `IT${year}${paddedNumber}`;
 }
 
 export async function createInventoryItem(data: {
@@ -49,7 +67,7 @@ export async function createInventoryItem(data: {
       return { success: false, error: "Selected category does not exist" };
     }
 
-    const barcode = generateBarcode();
+    const barcode = await generateBarcode();
 
     const item: InventoryItem = {
       barcode,
