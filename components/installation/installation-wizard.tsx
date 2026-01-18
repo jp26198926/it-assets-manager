@@ -512,7 +512,7 @@ export function InstallationWizard({ initialStep }: { initialStep?: string }) {
               </div>
               <h3 className="text-xl font-semibold">Installation Complete!</h3>
               <p className="text-muted-foreground max-w-md mx-auto">
-                Your IT Ticketing System has been successfully installed and
+                Your IT Assets Manager has been successfully installed and
                 configured. You can now log in with your admin credentials.
               </p>
             </div>

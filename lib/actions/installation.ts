@@ -149,6 +149,8 @@ export async function seedDefaultRoles() {
       ([role, permissions]) => ({
         name: role,
         permissions,
+        isSystem: false,
+        isActive: true,
         createdAt: new Date(),
         updatedAt: new Date(),
       }),
