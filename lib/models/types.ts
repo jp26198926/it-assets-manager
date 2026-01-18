@@ -376,3 +376,19 @@ export interface RoleSerialized {
   createdBy?: string;
   updatedBy?: string;
 }
+
+// User types
+export interface UserSerialized {
+  _id: string;
+  username: string;
+  email: string;
+  password?: undefined; // Never expose password
+  role: string;
+  name: string;
+  employeeId?: string;
+  department?: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+  lastLogin?: string;
+}

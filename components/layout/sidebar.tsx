@@ -18,6 +18,7 @@ import {
   BookOpen,
   Settings,
   Shield,
+  UserCog,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
@@ -34,6 +35,7 @@ const navigation = [
   { name: "Tickets", href: "/tickets", icon: Ticket },
   { name: "Knowledge Base", href: "/knowledgebase", icon: BookOpen },
   { name: "Reports", href: "/reports", icon: FileText },
+  { name: "Users", href: "/users", icon: UserCog, adminOnly: true },
   { name: "Roles", href: "/roles", icon: Shield, adminOnly: true },
   { name: "Settings", href: "/settings", icon: Settings },
 ];

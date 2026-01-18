@@ -7,7 +7,7 @@
     "dev": "next dev",
     "lint": "eslint .",
     "start": "next start",
-    "seed:users": "tsx scripts/seed-users.ts",
+    "seed:users": "tsx scripts/seed-default-users.ts",
     "seed:roles": "tsx scripts/seed-default-roles.ts",
     "migrate:employee-departments": "tsx scripts/migrate-employee-departments.ts",
     "migrate:employee-names": "tsx scripts/migrate-employee-names.ts",
