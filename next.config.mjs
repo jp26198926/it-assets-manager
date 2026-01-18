@@ -1,7 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  basePath: "/it-assets-manager",
-  assetPrefix: "/it-assets-manager",
+  // Uncomment these for production subdirectory deployment
+  // basePath: "/it-assets-manager",
+  // assetPrefix: "/it-assets-manager",
   typescript: {
     ignoreBuildErrors: true,
   },
