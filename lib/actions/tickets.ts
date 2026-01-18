@@ -51,11 +51,11 @@ async function generateTicketNumber(): Promise<string> {
   const db = await getDatabase();
   const collection = db.collection<Ticket>("tickets");
 
-  const year = new Date().getFullYear();
+  const year = new Date().getFullYear().toString().slice(-2); // Get last 2 digits of year
   const count = await collection.countDocuments();
   const number = (count + 1).toString().padStart(5, "0");
 
-  return `TKT-${year}-${number}`;
+  return `IT${year}${number}`;
 }
 
 export async function createTicket(data: {

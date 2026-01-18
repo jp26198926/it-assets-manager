@@ -122,6 +122,9 @@ const backgroundColorMap: Record<
     input: string;
     secondary: string;
     accent: string;
+    hoverBg: string;
+    hoverGlass: string;
+    hoverGlassBorder: string;
   }
 > = {
   black: {
@@ -138,6 +141,9 @@ const backgroundColorMap: Record<
     input: "0.22 0.008 250",
     secondary: "0.25 0.01 250",
     accent: "0.28 0.02 250",
+    hoverBg: "0.22 0.012 250",
+    hoverGlass: "0.25 0.012 250 / 0.5",
+    hoverGlassBorder: "0.5 0.02 250 / 0.3",
   },
   dark: {
     bg: "0.18 0.008 250",
@@ -153,6 +159,9 @@ const backgroundColorMap: Record<
     input: "0.25 0.008 250",
     secondary: "0.28 0.01 250",
     accent: "0.31 0.02 250",
+    hoverBg: "0.25 0.012 250",
+    hoverGlass: "0.28 0.012 250 / 0.5",
+    hoverGlassBorder: "0.53 0.02 250 / 0.3",
   },
   darker: {
     bg: "0.12 0.01 250",
@@ -168,6 +177,9 @@ const backgroundColorMap: Record<
     input: "0.19 0.008 250",
     secondary: "0.22 0.01 250",
     accent: "0.25 0.02 250",
+    hoverBg: "0.19 0.012 250",
+    hoverGlass: "0.22 0.012 250 / 0.5",
+    hoverGlassBorder: "0.47 0.02 250 / 0.3",
   },
   darkest: {
     bg: "0.08 0.005 250",
@@ -183,6 +195,9 @@ const backgroundColorMap: Record<
     input: "0.15 0.008 250",
     secondary: "0.18 0.01 250",
     accent: "0.21 0.02 250",
+    hoverBg: "0.15 0.012 250",
+    hoverGlass: "0.18 0.012 250 / 0.5",
+    hoverGlassBorder: "0.43 0.02 250 / 0.3",
   },
   zinc: {
     bg: "0.16 0.015 255",
@@ -198,6 +213,9 @@ const backgroundColorMap: Record<
     input: "0.23 0.015 255",
     secondary: "0.26 0.015 255",
     accent: "0.29 0.018 255",
+    hoverBg: "0.23 0.018 255",
+    hoverGlass: "0.26 0.018 255 / 0.5",
+    hoverGlassBorder: "0.51 0.025 255 / 0.3",
   },
   slate: {
     bg: "0.16 0.020 235",
@@ -213,6 +231,9 @@ const backgroundColorMap: Record<
     input: "0.23 0.020 235",
     secondary: "0.26 0.020 235",
     accent: "0.29 0.022 235",
+    hoverBg: "0.23 0.024 235",
+    hoverGlass: "0.26 0.024 235 / 0.5",
+    hoverGlassBorder: "0.51 0.030 235 / 0.3",
   },
   gray: {
     bg: "0.16 0.018 235",
@@ -228,6 +249,9 @@ const backgroundColorMap: Record<
     input: "0.23 0.018 235",
     secondary: "0.26 0.018 235",
     accent: "0.29 0.020 235",
+    hoverBg: "0.23 0.022 235",
+    hoverGlass: "0.26 0.022 235 / 0.5",
+    hoverGlassBorder: "0.51 0.028 235 / 0.3",
   },
   white: {
     bg: "1.0 0 0",
@@ -243,6 +267,9 @@ const backgroundColorMap: Record<
     input: "0.95 0.003 0",
     secondary: "0.94 0.003 0",
     accent: "0.92 0.005 0",
+    hoverBg: "0.96 0.008 0",
+    hoverGlass: "0.92 0.008 0 / 0.7",
+    hoverGlassBorder: "0.75 0.010 0 / 0.4",
   },
   milk: {
     bg: "0.98 0.005 80",
@@ -258,6 +285,9 @@ const backgroundColorMap: Record<
     input: "0.93 0.006 80",
     secondary: "0.92 0.006 80",
     accent: "0.90 0.008 80",
+    hoverBg: "0.94 0.010 80",
+    hoverGlass: "0.90 0.010 80 / 0.7",
+    hoverGlassBorder: "0.73 0.012 80 / 0.4",
   },
   "light-gray": {
     bg: "0.94 0.008 235",
@@ -273,6 +303,9 @@ const backgroundColorMap: Record<
     input: "0.88 0.009 235",
     secondary: "0.87 0.009 235",
     accent: "0.85 0.011 235",
+    hoverBg: "0.88 0.012 235",
+    hoverGlass: "0.85 0.012 235 / 0.7",
+    hoverGlassBorder: "0.68 0.014 235 / 0.4",
   },
 };
 
@@ -358,6 +391,14 @@ export function ThemeProvider({
       // Glassmorphism
       root.style.setProperty("--glass-bg", `oklch(${colors.glassBg})`);
       root.style.setProperty("--glass-border", `oklch(${colors.glassBorder})`);
+
+      // Hover states for neomorphism
+      root.style.setProperty("--hover-bg", `oklch(${colors.hoverBg})`);
+      root.style.setProperty("--hover-glass", `oklch(${colors.hoverGlass})`);
+      root.style.setProperty(
+        "--hover-glass-border",
+        `oklch(${colors.hoverGlassBorder})`,
+      );
     }
   }, [backgroundColor]);
 
