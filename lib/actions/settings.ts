@@ -5,6 +5,7 @@ import type { AppSettings, AppSettingsSerialized } from "@/lib/models/types";
 import { revalidatePath } from "next/cache";
 import { requireAuth } from "./auth";
 import { hasPermission } from "../models/User";
+import { sendEmail, generateEmailTemplate } from "@/lib/utils/email";
 
 // Helper function to serialize settings for client components
 function serializeSettings(settings: AppSettings): AppSettingsSerialized {
@@ -186,5 +187,103 @@ export async function updateEmailConfig(data: {
   } catch (error) {
     console.error("Error updating email config:", error);
     return { success: false, error: "Failed to update email configuration" };
+  }
+}
+
+export async function sendTestEmail(
+  recipientEmail: string,
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const user = await requireAuth();
+    if (!hasPermission(user.role, "users", "update")) {
+      return { success: false, error: "Unauthorized" };
+    }
+
+    const db = await getDatabase();
+    const collection = db.collection<AppSettings>("settings");
+    const settings = await collection.findOne({});
+
+    if (!settings) {
+      return { success: false, error: "Email settings not configured" };
+    }
+
+    // Check if email is configured
+    const isConfigured =
+      settings.emailProvider === "smtp"
+        ? !!(settings.smtpHost && settings.smtpUser && settings.smtpPassword)
+        : !!(settings.emailApiKey && settings.emailApiEndpoint);
+
+    if (!isConfigured) {
+      return {
+        success: false,
+        error: "Email not configured. Please complete the configuration first.",
+      };
+    }
+
+    const companyName = settings.companyName || "IT Support System";
+    const content = `
+      <h2>Email Configuration Test</h2>
+      <p>This is a test email from your ticketing system.</p>
+      
+      <div class="info-box">
+        <strong>Email Provider:</strong>
+        ${settings.emailProvider.toUpperCase()}
+      </div>
+
+      <div class="info-box">
+        <strong>Sent to:</strong>
+        ${recipientEmail}
+      </div>
+
+      <div class="info-box">
+        <strong>Sent by:</strong>
+        ${user.name} (${user.email})
+      </div>
+
+      <div class="info-box">
+        <strong>Time:</strong>
+        ${new Date().toLocaleString()}
+      </div>
+
+      <p style="margin-top: 30px; color: #22c55e; font-weight: 600;">
+        ✓ If you received this email, your email configuration is working correctly!
+      </p>
+
+      <p style="margin-top: 20px; font-size: 14px; color: #6b7280;">
+        You can now receive notifications for ticket updates, assignments, and other system events.
+      </p>
+    `;
+
+    console.log("Generating email template...");
+    const html = await generateEmailTemplate(companyName, content);
+
+    console.log("Sending test email to:", recipientEmail);
+    console.log("Using provider:", settings.emailProvider);
+
+    const emailSent = await sendEmail({
+      to: recipientEmail,
+      subject: `Test Email - ${companyName}`,
+      html,
+    });
+
+    if (!emailSent) {
+      console.error("Email send returned false");
+      return {
+        success: false,
+        error:
+          "Failed to send test email. Please check your email configuration (SMTP host, credentials, ports) and server console for detailed errors.",
+      };
+    }
+
+    console.log("Test email sent successfully");
+    return { success: true };
+  } catch (error) {
+    console.error("Error sending test email:", error);
+    const errorMessage =
+      error instanceof Error ? error.message : "Unknown error";
+    return {
+      success: false,
+      error: `Failed to send test email: ${errorMessage}`,
+    };
   }
 }

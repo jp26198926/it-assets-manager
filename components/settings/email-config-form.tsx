@@ -13,9 +13,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useToast } from "@/hooks/use-toast";
-import { updateEmailConfig } from "@/lib/actions/settings";
+import { updateEmailConfig, sendTestEmail } from "@/lib/actions/settings";
 import type { AppSettingsSerialized, EmailProvider } from "@/lib/models/types";
-import { Loader2, Mail, Server, Cloud } from "lucide-react";
+import { Loader2, Mail, Server, Cloud, Send } from "lucide-react";
 
 interface EmailConfigFormProps {
   settings: AppSettingsSerialized;
@@ -28,6 +28,8 @@ export function EmailConfigForm({
 }: EmailConfigFormProps) {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+  const [testingEmail, setTestingEmail] = useState(false);
+  const [testEmail, setTestEmail] = useState("");
   const [provider, setProvider] = useState<EmailProvider>(
     settings.emailProvider,
   );
@@ -74,6 +76,45 @@ export function EmailConfigForm({
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleTestEmail = async () => {
+    if (!testEmail) {
+      toast({
+        title: "Error",
+        description: "Please enter an email address",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setTestingEmail(true);
+
+    try {
+      const result = await sendTestEmail(testEmail);
+
+      if (result.success) {
+        toast({
+          title: "Success",
+          description: `Test email sent to ${testEmail}. Please check your inbox.`,
+        });
+        setTestEmail("");
+      } else {
+        toast({
+          title: "Error",
+          description: result.error || "Failed to send test email",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred",
+        variant: "destructive",
+      });
+    } finally {
+      setTestingEmail(false);
     }
   };
 
@@ -193,27 +234,22 @@ export function EmailConfigForm({
                   placeholder="••••••••"
                   required={provider === "smtp"}
                 />
+                <p className="text-xs text-muted-foreground mt-1">
+                  For Gmail, use an App Password instead of your regular
+                  password
+                </p>
               </div>
 
-              <div className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  id="smtpSecure"
-                  checked={smtpConfig.smtpSecure}
-                  onChange={(e) =>
-                    setSmtpConfig({
-                      ...smtpConfig,
-                      smtpSecure: e.target.checked,
-                    })
-                  }
-                  className="rounded border-gray-300"
-                />
-                <Label
-                  htmlFor="smtpSecure"
-                  className="font-normal cursor-pointer"
-                >
-                  Use SSL/TLS encryption
-                </Label>
+              <div className="p-3 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                <p className="text-xs text-blue-800 dark:text-blue-200">
+                  <strong>Port Guide:</strong>
+                  <br />• Port <strong>587</strong> - TLS/STARTTLS (recommended
+                  for most providers)
+                  <br />• Port <strong>465</strong> - SSL (legacy, but still
+                  supported)
+                  <br />• Port <strong>25</strong> - Unencrypted (not
+                  recommended)
+                </p>
               </div>
             </div>
           ) : (
@@ -252,11 +288,44 @@ export function EmailConfigForm({
             </div>
           )}
 
-          <Button type="submit" disabled={loading}>
-            {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Save Configuration
-          </Button>
+          <div className="flex gap-3">
+            <Button type="submit" disabled={loading}>
+              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Save Configuration
+            </Button>
+          </div>
         </form>
+
+        {/* Test Email Section */}
+        <div className="mt-6 pt-6 border-t">
+          <h4 className="font-medium text-sm mb-3 flex items-center gap-2">
+            <Send className="h-4 w-4" />
+            Test Email Configuration
+          </h4>
+          <p className="text-sm text-muted-foreground mb-3">
+            Send a test email to verify your configuration is working correctly.
+          </p>
+          <div className="flex gap-2">
+            <Input
+              type="email"
+              placeholder="Enter email address to test"
+              value={testEmail}
+              onChange={(e) => setTestEmail(e.target.value)}
+              className="flex-1"
+            />
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleTestEmail}
+              disabled={testingEmail || !testEmail}
+            >
+              {testingEmail && (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              )}
+              {testingEmail ? "Sending..." : "Send Test"}
+            </Button>
+          </div>
+        </div>
       </CardContent>
     </Card>
   );

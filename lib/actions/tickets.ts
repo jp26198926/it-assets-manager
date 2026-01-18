@@ -6,6 +6,13 @@ import type { Ticket, TicketStatus, TicketPriority } from "@/lib/models/types";
 import { revalidatePath } from "next/cache";
 import { requireAuth } from "./auth";
 import { hasPermission } from "../models/User";
+import {
+  sendNewTicketNotification,
+  sendTicketStatusUpdateNotification,
+  sendTicketAssignedNotification,
+  sendGuestTicketConfirmation,
+} from "@/lib/utils/ticket-notifications";
+
 // Helper function to serialize tickets for client components
 function serializeTicket(ticket: any) {
   return {
@@ -114,6 +121,15 @@ export async function createTicket(data: {
     const result = await collection.insertOne(ticket);
     ticket._id = result.insertedId;
 
+    // Send new ticket notification
+    sendNewTicketNotification(
+      ticket,
+      data.reportedBy.name,
+      data.reportedBy.email,
+    ).catch((err) =>
+      console.error("Failed to send new ticket notification:", err),
+    );
+
     revalidatePath("/tickets");
     return { success: true, ticket };
   } catch (error) {
@@ -216,8 +232,15 @@ export async function updateTicketStatus(
     const db = await getDatabase();
     const ticketsCollection = db.collection<Ticket>("tickets");
 
-    // First, get the ticket to check if it has an associated item
+    // First, get the ticket to check if it has an associated item and track old status
     const ticket = await ticketsCollection.findOne({ _id: new ObjectId(id) });
+
+    if (!ticket) {
+      return { success: false, error: "Ticket not found" };
+    }
+
+    const oldStatus = ticket.status;
+    const oldAssignedToId = ticket.assignedToId?.toString();
 
     const update: Record<string, unknown> = {
       status,
@@ -240,6 +263,45 @@ export async function updateTicketStatus(
       { _id: new ObjectId(id) },
       { $set: update },
     );
+
+    // Get updated ticket for notifications
+    const updatedTicket = await ticketsCollection.findOne({
+      _id: new ObjectId(id),
+    });
+
+    // Send email notifications
+    if (updatedTicket) {
+      // Notify about status change
+      if (oldStatus !== status) {
+        sendTicketStatusUpdateNotification(
+          updatedTicket,
+          oldStatus,
+          status,
+          user.name,
+        ).catch((err) =>
+          console.error("Failed to send status update notification:", err),
+        );
+      }
+
+      // Notify about assignment
+      if (assignedToId && oldAssignedToId !== assignedToId) {
+        const usersCollection = db.collection("users");
+        const assignedUser = await usersCollection.findOne({
+          _id: new ObjectId(assignedToId),
+        });
+
+        if (assignedUser) {
+          sendTicketAssignedNotification(
+            updatedTicket,
+            assignedUser.name,
+            assignedUser.email,
+            user.name,
+          ).catch((err) =>
+            console.error("Failed to send assignment notification:", err),
+          );
+        }
+      }
+    }
 
     // Update inventory item status based on ticket status
     if (ticket?.itemId) {
@@ -858,6 +920,17 @@ export async function createGuestTicket(data: {
     };
 
     await collection.insertOne(ticket);
+
+    // Send guest ticket confirmation email
+    const trackingUrl = `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/track/${ticketNumber}`;
+    sendGuestTicketConfirmation(
+      ticketNumber,
+      data.title,
+      data.email,
+      trackingUrl,
+    ).catch((err) =>
+      console.error("Failed to send guest ticket confirmation:", err),
+    );
 
     revalidatePath("/");
     revalidatePath("/tickets");
