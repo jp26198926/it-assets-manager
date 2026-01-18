@@ -13,7 +13,18 @@ import type {
 } from "@/lib/models/types";
 import { format } from "date-fns";
 import Link from "next/link";
-import { Package } from "lucide-react";
+import { Package, Download, Printer } from "lucide-react";
+import { useState, useRef } from "react";
+import QRCode from "qrcode";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 
 const statusVariants: Record<
   ItemStatus,
@@ -45,6 +56,125 @@ interface ItemDetailsProps {
 }
 
 export function ItemDetails({ item, issuances, tickets }: ItemDetailsProps) {
+  const [downloadDialogOpen, setDownloadDialogOpen] = useState(false);
+  const [printDialogOpen, setPrintDialogOpen] = useState(false);
+  const [selectedColor, setSelectedColor] = useState("#000000");
+  const downloadCanvasRef = useRef<HTMLCanvasElement>(null);
+  const printCanvasRef = useRef<HTMLCanvasElement>(null);
+
+  const colorOptions = [
+    { value: "#000000", label: "Black" },
+    { value: "#ffffff", label: "White" },
+    { value: "#ef4444", label: "Red" },
+    { value: "#3b82f6", label: "Blue" },
+    { value: "#22c55e", label: "Green" },
+    { value: "#f59e0b", label: "Orange" },
+    { value: "#8b5cf6", label: "Purple" },
+  ];
+
+  const generateQRCode = async (
+    canvas: HTMLCanvasElement | null,
+    color: string,
+  ) => {
+    if (!canvas) return;
+
+    await QRCode.toCanvas(canvas, item.barcode, {
+      width: 400,
+      margin: 2,
+      color: {
+        dark: color,
+        light: "#00000000",
+      },
+    });
+  };
+
+  const handleDownload = async () => {
+    if (!downloadCanvasRef.current) return;
+
+    await generateQRCode(downloadCanvasRef.current, selectedColor);
+
+    const link = document.createElement("a");
+    link.download = `${item.barcode}-QR.png`;
+    link.href = downloadCanvasRef.current.toDataURL();
+    link.click();
+
+    setDownloadDialogOpen(false);
+  };
+
+  const handlePrint = async () => {
+    if (!printCanvasRef.current) return;
+
+    await generateQRCode(printCanvasRef.current, selectedColor);
+
+    const printWindow = window.open("", "_blank");
+    if (!printWindow) return;
+
+    const imageUrl = printCanvasRef.current.toDataURL();
+
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Print QR Code - ${item.barcode}</title>
+          <style>
+            body {
+              margin: 0;
+              padding: 20px;
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              justify-content: center;
+              min-height: 100vh;
+              font-family: system-ui, -apple-system, sans-serif;
+            }
+            .qr-container {
+              text-align: center;
+              page-break-inside: avoid;
+            }
+            img {
+              max-width: 400px;
+              height: auto;
+            }
+            .barcode-text {
+              margin-top: 16px;
+              font-family: monospace;
+              font-size: 18px;
+              font-weight: 600;
+            }
+            .item-name {
+              margin-top: 8px;
+              font-size: 16px;
+              color: #666;
+            }
+            @media print {
+              body {
+                padding: 0;
+              }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="qr-container">
+            <img src="${imageUrl}" alt="QR Code" />
+            <div class="barcode-text">${item.barcode}</div>
+            <div class="item-name">${item.name}</div>
+          </div>
+          <script>
+            window.onload = function() {
+              window.print();
+              window.onafterprint = function() {
+                window.close();
+              };
+            };
+          </script>
+        </body>
+      </html>
+    `);
+
+    printWindow.document.close();
+    setPrintDialogOpen(false);
+  };
+
   return (
     <div className="grid gap-6 lg:grid-cols-3">
       <div className="lg:col-span-2 space-y-6">
@@ -233,6 +363,149 @@ export function ItemDetails({ item, issuances, tickets }: ItemDetailsProps) {
           <CardContent className="flex flex-col items-center gap-4">
             <BarcodeDisplay value={item.barcode} type="qr" size={180} />
             <p className="font-mono text-sm">{item.barcode}</p>
+
+            <div className="flex gap-2 w-full">
+              <Dialog
+                open={downloadDialogOpen}
+                onOpenChange={setDownloadDialogOpen}
+              >
+                <DialogTrigger asChild>
+                  <Button variant="outline" className="flex-1" size="sm">
+                    <Download className="h-4 w-4 mr-2" />
+                    Download
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Download QR Code</DialogTitle>
+                    <DialogDescription>
+                      Select a color for your QR code before downloading
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    <div>
+                      <Label>QR Code Color</Label>
+                      <div className="grid grid-cols-4 gap-2 mt-2">
+                        {colorOptions.map((option) => (
+                          <button
+                            key={option.value}
+                            onClick={() => setSelectedColor(option.value)}
+                            className={`p-3 rounded-lg border-2 transition-all ${
+                              selectedColor === option.value
+                                ? "border-primary ring-2 ring-primary/20"
+                                : "border-border hover:border-primary/50"
+                            }`}
+                            style={{
+                              backgroundColor:
+                                option.value === "#ffffff"
+                                  ? "#f3f4f6"
+                                  : option.value,
+                            }}
+                          >
+                            <span className="sr-only">{option.label}</span>
+                          </button>
+                        ))}
+                      </div>
+                      <p className="text-sm text-muted-foreground mt-2">
+                        Selected:{" "}
+                        {
+                          colorOptions.find((c) => c.value === selectedColor)
+                            ?.label
+                        }
+                      </p>
+                    </div>
+                    <div className="flex justify-center p-4 bg-secondary rounded-lg">
+                      <canvas ref={downloadCanvasRef} className="hidden" />
+                      <div className="text-center text-sm text-muted-foreground">
+                        Preview will be generated on download
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        onClick={() => setDownloadDialogOpen(false)}
+                        className="flex-1"
+                      >
+                        Cancel
+                      </Button>
+                      <Button onClick={handleDownload} className="flex-1">
+                        <Download className="h-4 w-4 mr-2" />
+                        Download
+                      </Button>
+                    </div>
+                  </div>
+                </DialogContent>
+              </Dialog>
+
+              <Dialog open={printDialogOpen} onOpenChange={setPrintDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button variant="outline" className="flex-1" size="sm">
+                    <Printer className="h-4 w-4 mr-2" />
+                    Print
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Print QR Code</DialogTitle>
+                    <DialogDescription>
+                      Select a color for your QR code before printing
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    <div>
+                      <Label>QR Code Color</Label>
+                      <div className="grid grid-cols-4 gap-2 mt-2">
+                        {colorOptions.map((option) => (
+                          <button
+                            key={option.value}
+                            onClick={() => setSelectedColor(option.value)}
+                            className={`p-3 rounded-lg border-2 transition-all ${
+                              selectedColor === option.value
+                                ? "border-primary ring-2 ring-primary/20"
+                                : "border-border hover:border-primary/50"
+                            }`}
+                            style={{
+                              backgroundColor:
+                                option.value === "#ffffff"
+                                  ? "#f3f4f6"
+                                  : option.value,
+                            }}
+                          >
+                            <span className="sr-only">{option.label}</span>
+                          </button>
+                        ))}
+                      </div>
+                      <p className="text-sm text-muted-foreground mt-2">
+                        Selected:{" "}
+                        {
+                          colorOptions.find((c) => c.value === selectedColor)
+                            ?.label
+                        }
+                      </p>
+                    </div>
+                    <div className="flex justify-center p-4 bg-secondary rounded-lg">
+                      <canvas ref={printCanvasRef} className="hidden" />
+                      <div className="text-center text-sm text-muted-foreground">
+                        Preview will be generated on print
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        onClick={() => setPrintDialogOpen(false)}
+                        className="flex-1"
+                      >
+                        Cancel
+                      </Button>
+                      <Button onClick={handlePrint} className="flex-1">
+                        <Printer className="h-4 w-4 mr-2" />
+                        Print
+                      </Button>
+                    </div>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </div>
           </CardContent>
         </Card>
 
