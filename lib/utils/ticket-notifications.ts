@@ -72,6 +72,22 @@ export async function sendNewTicketNotification(
       recipients.push(assignedUserEmail);
     }
 
+    // Get managers and admins from database
+    const db = await getDatabase();
+    const usersCollection = db.collection("users");
+    const managersAndAdmins = await usersCollection
+      .find({
+        role: { $in: ["manager", "admin"] },
+      })
+      .toArray();
+
+    // Add managers and admins to recipients (avoiding duplicates)
+    for (const user of managersAndAdmins) {
+      if (user.email && !recipients.includes(user.email)) {
+        recipients.push(user.email);
+      }
+    }
+
     if (recipients.length > 0) {
       await sendEmail({
         to: recipients,
@@ -115,6 +131,28 @@ export async function sendTicketStatusUpdateNotification(
       const assignedEmail = await getUserEmail(ticket.assignedToId.toString());
       if (assignedEmail && assignedEmail !== ticket.reportedBy?.email) {
         recipients.push(assignedEmail);
+      }
+    }
+
+    // If ticket is resolved, closed, or defective_closed, notify managers
+    if (
+      newStatus === "resolved" ||
+      newStatus === "closed" ||
+      newStatus === "defective_closed"
+    ) {
+      const db = await getDatabase();
+      const usersCollection = db.collection("users");
+      const managers = await usersCollection
+        .find({
+          role: "manager",
+        })
+        .toArray();
+
+      // Add managers to recipients (avoiding duplicates)
+      for (const manager of managers) {
+        if (manager.email && !recipients.includes(manager.email)) {
+          recipients.push(manager.email);
+        }
       }
     }
 
