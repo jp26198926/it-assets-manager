@@ -16,6 +16,8 @@ import {
   FolderTree,
   FileText,
   BookOpen,
+  Settings,
+  Shield,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
@@ -32,6 +34,8 @@ const navigation = [
   { name: "Tickets", href: "/tickets", icon: Ticket },
   { name: "Knowledge Base", href: "/knowledgebase", icon: BookOpen },
   { name: "Reports", href: "/reports", icon: FileText },
+  { name: "Roles", href: "/roles", icon: Shield, adminOnly: true },
+  { name: "Settings", href: "/settings", icon: Settings },
 ];
 
 export function Sidebar() {
@@ -106,6 +110,10 @@ export function Sidebar() {
         <nav className="flex flex-col gap-1 p-4">
           {navigation.map((item) => {
             const isActive = pathname === item.href;
+            // Hide admin-only items for non-admin users
+            if (item.adminOnly && user?.role !== "admin") {
+              return null;
+            }
             return (
               <Link
                 key={item.name}

@@ -2,6 +2,9 @@ import type React from "react";
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
+import { ThemeProvider } from "@/components/theme-provider";
+import { getSettings } from "@/lib/actions/settings";
+import { Toaster } from "@/components/ui/toaster";
 import "./globals.css";
 
 const _geist = Geist({ subsets: ["latin"] });
@@ -37,15 +40,36 @@ export const viewport: Viewport = {
   initialScale: 1,
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // Fetch theme settings
+  const settingsResult = await getSettings();
+  const themeColor =
+    settingsResult.success && settingsResult.data
+      ? settingsResult.data.themeColor
+      : "blue";
+  const backgroundColor =
+    settingsResult.success && settingsResult.data
+      ? settingsResult.data.backgroundColor
+      : "black";
+
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body className={`font-sans antialiased`}>
-        {children}
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="dark"
+          enableSystem={false}
+          disableTransitionOnChange
+          initialThemeColor={themeColor}
+          initialBackgroundColor={backgroundColor}
+        >
+          {children}
+          <Toaster />
+        </ThemeProvider>
         <Analytics />
       </body>
     </html>

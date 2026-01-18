@@ -269,3 +269,110 @@ export interface TicketWithDepartmentSerialized {
   resolvedAt?: string;
   closedAt?: string;
 }
+
+// App Settings Types
+export type EmailProvider = "smtp" | "api";
+export type ThemeColor =
+  | "zinc"
+  | "slate"
+  | "stone"
+  | "gray"
+  | "neutral"
+  | "red"
+  | "orange"
+  | "amber"
+  | "yellow"
+  | "lime"
+  | "green"
+  | "emerald"
+  | "teal"
+  | "cyan"
+  | "sky"
+  | "blue"
+  | "indigo"
+  | "violet"
+  | "purple"
+  | "fuchsia"
+  | "pink"
+  | "rose";
+
+export type BackgroundColor =
+  | "black"
+  | "dark"
+  | "darker"
+  | "darkest"
+  | "zinc"
+  | "slate"
+  | "gray"
+  | "white"
+  | "milk"
+  | "light-gray";
+
+export interface AppSettings {
+  _id?: ObjectId;
+  // Company Details
+  companyName: string;
+  companyEmail?: string;
+  companyPhone?: string;
+  companyAddress?: string;
+  companyLogo?: string;
+
+  // Theme Settings
+  themeColor: ThemeColor;
+  backgroundColor: BackgroundColor;
+
+  // Email Configuration
+  emailProvider: EmailProvider;
+  // SMTP Config
+  smtpHost?: string;
+  smtpPort?: number;
+  smtpUser?: string;
+  smtpPassword?: string;
+  smtpSecure?: boolean;
+  // Email API Config
+  emailApiKey?: string;
+  emailApiEndpoint?: string;
+
+  updatedAt: Date;
+  updatedBy?: string;
+}
+
+// Serialized version for client components
+export interface AppSettingsSerialized {
+  _id?: string;
+  companyName: string;
+  companyEmail?: string;
+  companyPhone?: string;
+  companyAddress?: string;
+  companyLogo?: string;
+  themeColor: ThemeColor;
+  backgroundColor: BackgroundColor;
+  emailProvider: EmailProvider;
+  smtpHost?: string;
+  smtpPort?: number;
+  smtpUser?: string;
+  smtpPassword?: string;
+  smtpSecure?: boolean;
+  emailApiKey?: string;
+  emailApiEndpoint?: string;
+  updatedAt: string;
+  updatedBy?: string;
+}
+
+// Role types
+export interface RoleSerialized {
+  _id: string;
+  name: string;
+  slug: string;
+  description?: string;
+  permissions: {
+    resource: string;
+    actions: string[];
+  }[];
+  isSystem: boolean;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+  createdBy?: string;
+  updatedBy?: string;
+}

@@ -38,6 +38,7 @@ export interface KnowledgeArticleSerialized {
     name: string;
     url: string;
     size: number;
+    type: string;
   }[];
   createdAt: string;
   updatedAt: string;

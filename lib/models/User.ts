@@ -1,6 +1,6 @@
 import type { ObjectId } from "mongodb";
 
-export type UserRole = "admin" | "manager" | "employee";
+export type UserRole = "admin" | "manager" | "employee" | "technician";
 
 export interface Permission {
   resource: string;
@@ -53,6 +53,16 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     { resource: "departments", actions: ["read"] },
     { resource: "employees", actions: ["read"] },
     { resource: "knowledge", actions: ["read"] },
+  ],
+  technician: [
+    { resource: "inventory", actions: ["read", "update"] },
+    { resource: "tickets", actions: ["create", "read", "update"] },
+    { resource: "issuance", actions: ["create", "read", "update"] },
+    { resource: "departments", actions: ["read"] },
+    { resource: "employees", actions: ["read"] },
+    { resource: "categories", actions: ["read"] },
+    { resource: "knowledge", actions: ["create", "read", "update"] },
+    { resource: "reports", actions: ["read"] },
   ],
 };
 
