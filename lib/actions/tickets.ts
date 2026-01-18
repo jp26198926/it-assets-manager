@@ -799,3 +799,89 @@ export async function getTicketsByItemId(itemId: string) {
     return [];
   }
 }
+
+// Guest ticket creation (no authentication required)
+export async function createGuestTicket(data: {
+  name: string;
+  email: string;
+  title: string;
+  description: string;
+  category: string;
+  priority: TicketPriority;
+  formStartTime: number;
+  attachments?: Array<{
+    filename: string;
+    url: string;
+    size: number;
+    type: string;
+  }>;
+}): Promise<{ success: boolean; ticketNumber?: string; error?: string }> {
+  try {
+    // Server-side time-based verification (minimum 3 seconds)
+    const timeSpent = Date.now() - data.formStartTime;
+    if (timeSpent < 3000) {
+      return { success: false, error: "Form submitted too quickly" };
+    }
+
+    // Additional rate limiting: max 30 seconds to prevent extremely slow submissions
+    if (timeSpent > 1800000) {
+      // 30 minutes
+      return {
+        success: false,
+        error: "Session expired, please refresh and try again",
+      };
+    }
+
+    const db = await getDatabase();
+    const collection = db.collection<Ticket>("tickets");
+
+    const ticketNumber = await generateTicketNumber();
+
+    const ticket: Ticket = {
+      ticketNumber,
+      title: data.title,
+      description: data.description,
+      priority: data.priority,
+      status: "open",
+      category: data.category,
+      reportedBy: {
+        name: data.name,
+        email: data.email,
+      },
+      attachments: data.attachments || [],
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+
+    await collection.insertOne(ticket);
+
+    revalidatePath("/");
+    revalidatePath("/tickets");
+
+    return { success: true, ticketNumber };
+  } catch (error) {
+    console.error("Error creating guest ticket:", error);
+    return { success: false, error: "Failed to create ticket" };
+  }
+}
+
+// Track guest ticket (no authentication required)
+export async function trackGuestTicket(
+  ticketNumber: string,
+): Promise<{ success: boolean; ticket?: any; error?: string }> {
+  try {
+    const db = await getDatabase();
+    const collection = db.collection<Ticket>("tickets");
+
+    const ticket = await collection.findOne({ ticketNumber });
+
+    if (!ticket) {
+      return { success: false, error: "Ticket not found" };
+    }
+
+    return { success: true, ticket: serializeTicket(ticket) };
+  } catch (error) {
+    console.error("Error tracking guest ticket:", error);
+    return { success: false, error: "Failed to track ticket" };
+  }
+}

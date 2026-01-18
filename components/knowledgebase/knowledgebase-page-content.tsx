@@ -13,11 +13,13 @@ import { Input } from "@/components/ui/input";
 interface KnowledgebasePageContentProps {
   initialArticles: KnowledgeArticleSerialized[];
   userRole?: string;
+  isGuest?: boolean;
 }
 
 export function KnowledgebasePageContent({
   initialArticles,
   userRole,
+  isGuest = false,
 }: KnowledgebasePageContentProps) {
   const [articles, setArticles] =
     useState<KnowledgeArticleSerialized[]>(initialArticles);
@@ -70,10 +72,12 @@ export function KnowledgebasePageContent({
         <div>
           <h1 className="text-3xl font-bold">Knowledge Base</h1>
           <p className="text-muted-foreground">
-            Browse and search help articles and documentation
+            {isGuest
+              ? "Browse help articles and documentation"
+              : "Browse and search help articles and documentation"}
           </p>
         </div>
-        {canCreateArticle && (
+        {!isGuest && canCreateArticle && (
           <Link href="/knowledgebase/new">
             <Button>
               <Plus className="mr-2 h-4 w-4" />

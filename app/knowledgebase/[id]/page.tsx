@@ -20,7 +20,24 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
   const user = await getCurrentUser();
   const userRole = user?.role;
   const userId = user?.id;
+  const isGuest = !user;
 
+  // For guests, render without MainLayout (no sidebar)
+  if (isGuest) {
+    return (
+      <div className="min-h-screen bg-background">
+        <div className="p-6 lg:p-8">
+          <ArticleViewer
+            article={result.data}
+            userRole={userRole}
+            userId={userId}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  // For authenticated users, use MainLayout with sidebar
   return (
     <MainLayout>
       <div className="p-6 lg:p-8">

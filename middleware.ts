@@ -15,13 +15,22 @@ const sessionOptions = {
 };
 
 // Public routes that don't require authentication
-const publicRoutes = ["/login", "/register", "/api/auth"];
+const publicRoutes = [
+  "/",
+  "/login",
+  "/register",
+  "/api/auth",
+  "/knowledgebase",
+];
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Allow public routes
-  if (publicRoutes.some((route) => pathname.startsWith(route))) {
+  // Allow public routes and knowledgebase article pages
+  if (
+    publicRoutes.some((route) => pathname.startsWith(route)) ||
+    pathname.match(/^\/knowledgebase\/[^/]+$/)
+  ) {
     return NextResponse.next();
   }
 

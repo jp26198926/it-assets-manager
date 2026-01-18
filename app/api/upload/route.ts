@@ -7,6 +7,7 @@ export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData();
     const file = formData.get("file") as File;
+    const folder = (formData.get("folder") as string) || "knowledgebase";
 
     if (!file) {
       return NextResponse.json({ error: "No file uploaded" }, { status: 400 });
@@ -22,7 +23,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Create upload directory if it doesn't exist
-    const uploadDir = join(process.cwd(), "public", "uploads", "knowledgebase");
+    const uploadDir = join(process.cwd(), "public", "uploads", folder);
     if (!existsSync(uploadDir)) {
       await mkdir(uploadDir, { recursive: true });
     }
@@ -39,7 +40,7 @@ export async function POST(request: NextRequest) {
     await writeFile(filepath, buffer);
 
     // Return the URL
-    const url = `/uploads/knowledgebase/${filename}`;
+    const url = `/uploads/${folder}/${filename}`;
 
     return NextResponse.json({
       success: true,
