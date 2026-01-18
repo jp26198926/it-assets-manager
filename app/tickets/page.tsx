@@ -20,7 +20,8 @@ export default async function TicketsPage() {
     redirect("/");
   }
 
-  const tickets = await getTicketsWithDepartment();
+  // Default to active tickets only (exclude closed and defective_closed)
+  const tickets = await getTicketsWithDepartment({ activeOnly: true });
   const canCreate = hasPermission(userResult.data.role, "tickets", "create");
 
   return (

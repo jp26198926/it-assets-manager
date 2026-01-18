@@ -49,7 +49,7 @@ export function TicketList({
 }) {
   const [tickets, setTickets] = useState(initialTickets);
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [statusFilter, setStatusFilter] = useState<string>("active");
   const [priorityFilter, setPriorityFilter] = useState<string>("all");
   const [isPending, startTransition] = useTransition();
 
@@ -65,8 +65,13 @@ export function TicketList({
         status?: TicketStatus;
         priority?: TicketPriority;
         search?: string;
+        activeOnly?: boolean;
       } = {};
-      if (newStatus !== "all") filters.status = newStatus as TicketStatus;
+      if (newStatus === "active") {
+        filters.activeOnly = true;
+      } else if (newStatus !== "all") {
+        filters.status = newStatus as TicketStatus;
+      }
       if (newPriority !== "all")
         filters.priority = newPriority as TicketPriority;
       if (newSearch) filters.search = newSearch;
@@ -178,6 +183,7 @@ export function TicketList({
             <SelectValue placeholder="Filter by status" />
           </SelectTrigger>
           <SelectContent>
+            <SelectItem value="active">Active Only</SelectItem>
             <SelectItem value="all">All Status</SelectItem>
             <SelectItem value="open">Open</SelectItem>
             <SelectItem value="in_progress">In Progress</SelectItem>

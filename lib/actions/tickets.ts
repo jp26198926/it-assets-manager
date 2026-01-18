@@ -485,6 +485,7 @@ export async function getTicketsWithDepartment(filters?: {
   status?: TicketStatus;
   priority?: TicketPriority;
   search?: string;
+  activeOnly?: boolean;
 }) {
   try {
     const user = await requireAuth();
@@ -508,7 +509,10 @@ export async function getTicketsWithDepartment(filters?: {
     }
     // Admin and manager can see all tickets (no additional filter)
 
-    if (filters?.status) {
+    if (filters?.activeOnly) {
+      // Active tickets: Open, In Progress, Waiting Parts
+      query.status = { $in: ["open", "in_progress", "waiting_parts"] };
+    } else if (filters?.status) {
       query.status = filters.status;
     }
 
