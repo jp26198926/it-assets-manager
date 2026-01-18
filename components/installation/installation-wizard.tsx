@@ -203,7 +203,7 @@ export function InstallationWizard({ initialStep }: { initialStep?: string }) {
           System Installation
         </CardTitle>
         <CardDescription className="text-center">
-          Set up your IT Ticketing System
+          Set up your IT Assets Manager
         </CardDescription>
       </CardHeader>
       <CardContent>

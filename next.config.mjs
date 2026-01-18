@@ -9,6 +9,10 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
+  // Disable Vercel Analytics for self-hosted deployments
+  experimental: {
+    webVitalsAttribution: [],
+  },
 };
 
 export default nextConfig;
