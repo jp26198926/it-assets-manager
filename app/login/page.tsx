@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Alert } from "@/components/ui/alert";
 import { login } from "@/lib/actions/auth";
+import { checkInstallationStatus } from "@/lib/actions/installation";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -23,6 +24,25 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [checkingInstall, setCheckingInstall] = useState(true);
+
+  useEffect(() => {
+    const checkInstall = async () => {
+      try {
+        const status = await checkInstallationStatus();
+        if (!status.installed) {
+          router.push("/install");
+        }
+      } catch (err) {
+        console.error("Error checking installation:", err);
+        // If there's an error checking installation, redirect to install
+        router.push("/install");
+      } finally {
+        setCheckingInstall(false);
+      }
+    };
+    checkInstall();
+  }, [router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -45,6 +65,19 @@ export default function LoginPage() {
       setLoading(false);
     }
   };
+
+  if (checkingInstall) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+          <p className="mt-4 text-muted-foreground">
+            Checking system status...
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">

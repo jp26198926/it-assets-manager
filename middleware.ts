@@ -21,10 +21,16 @@ const publicRoutes = [
   "/register",
   "/api/auth",
   "/knowledgebase",
+  "/install",
 ];
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  // Allow install route always
+  if (pathname.startsWith("/install")) {
+    return NextResponse.next();
+  }
 
   // Allow public routes and knowledgebase article pages
   if (
