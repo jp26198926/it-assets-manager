@@ -16,8 +16,11 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files
-.env*
+# env files (keep .env.example for reference)
+.env
+.env*.local
+.env.development
+.env.production
 
 # vercel
 .vercel
@@ -25,3 +28,38 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# user uploads
+/public/uploads/*
+!/public/uploads/.gitkeep
+
+# IDE
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+.idea
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# logs
+*.log
+logs/
+
+# Lock files (keep only one)
+package-lock.json
+# Keep pnpm-lock.yaml as the primary lock file
+
+# Testing
+coverage/
+.nyc_output/
+
+# Misc
+.cache/
