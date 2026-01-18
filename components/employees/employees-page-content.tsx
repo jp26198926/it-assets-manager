@@ -22,8 +22,8 @@ export function EmployeesPageContent({
   useEffect(() => {
     const fetchUserRole = async () => {
       const result = await getUserProfile();
-      if (result.success && result.user) {
-        setUserRole(result.user.role);
+      if (result.success && result.data) {
+        setUserRole(result.data.role);
       }
     };
     fetchUserRole();

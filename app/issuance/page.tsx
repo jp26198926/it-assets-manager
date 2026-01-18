@@ -13,8 +13,8 @@ export default async function IssuancePage() {
   const userResult = await getUserProfile();
   const canCreate =
     userResult.success &&
-    userResult.user &&
-    hasPermission(userResult.user.role as any, "issuance", "create");
+    userResult.data &&
+    hasPermission(userResult.data.role as any, "issuance", "create");
 
   return (
     <MainLayout>
@@ -37,7 +37,7 @@ export default async function IssuancePage() {
         <IssuanceList
           initialIssuances={issuances}
           userRole={
-            userResult.success && userResult.user ? userResult.user.role : null
+            userResult.success && userResult.data ? userResult.data.role : null
           }
         />
       </div>
