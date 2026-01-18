@@ -80,6 +80,105 @@ export async function login(username: string, password: string) {
   }
 }
 
+export async function register(data: {
+  username: string;
+  email: string;
+  password: string;
+  name: string;
+}) {
+  try {
+    const { db } = await connectToDatabase();
+
+    // Validate input
+    if (!data.username || !data.email || !data.password || !data.name) {
+      return { success: false, error: "All fields are required" };
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(data.email)) {
+      return { success: false, error: "Invalid email format" };
+    }
+
+    // Validate username length
+    if (data.username.length < 3) {
+      return {
+        success: false,
+        error: "Username must be at least 3 characters long",
+      };
+    }
+
+    // Validate password length
+    if (data.password.length < 6) {
+      return {
+        success: false,
+        error: "Password must be at least 6 characters long",
+      };
+    }
+
+    // Check if username already exists
+    const existingUsername = await db
+      .collection<User>("users")
+      .findOne({ username: data.username });
+    if (existingUsername) {
+      return { success: false, error: "Username already exists" };
+    }
+
+    // Check if email already exists
+    const existingEmail = await db
+      .collection<User>("users")
+      .findOne({ email: data.email });
+    if (existingEmail) {
+      return { success: false, error: "Email already exists" };
+    }
+
+    // Hash password
+    const hashedPassword = await bcrypt.hash(data.password, 10);
+
+    // Create new user with employee role by default
+    const newUser: User = {
+      username: data.username,
+      email: data.email,
+      password: hashedPassword,
+      name: data.name,
+      role: "employee", // Default role for new registrations
+      isActive: true,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+
+    const result = await db.collection<User>("users").insertOne(newUser);
+
+    if (!result.insertedId) {
+      return { success: false, error: "Failed to create user" };
+    }
+
+    // Automatically log in the user after registration
+    const session = await getSession();
+    session.userId = result.insertedId.toString();
+    session.username = newUser.username;
+    session.email = newUser.email;
+    session.role = newUser.role;
+    session.name = newUser.name;
+    session.isLoggedIn = true;
+    await session.save();
+
+    return {
+      success: true,
+      user: {
+        id: result.insertedId.toString(),
+        username: newUser.username,
+        email: newUser.email,
+        role: newUser.role,
+        name: newUser.name,
+      },
+    };
+  } catch (error) {
+    console.error("Registration error:", error);
+    return { success: false, error: "An error occurred during registration" };
+  }
+}
+
 export async function logout() {
   try {
     const session = await getSession();

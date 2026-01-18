@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
 import {
   Card,
   CardContent,
@@ -100,24 +101,19 @@ export default function LoginPage() {
               >
                 {loading ? "Signing in..." : "Sign In"}
               </Button>
-            </form>
 
-            <div className="mt-6 p-4 rounded-lg glass space-y-2">
-              <p className="text-sm font-semibold text-muted-foreground mb-2">
-                Demo Accounts:
-              </p>
-              <div className="space-y-1 text-xs">
-                <p className="text-primary font-medium">
-                  Admin: admin / admin123
-                </p>
-                <p className="text-info font-medium">
-                  Manager: manager / manager123
-                </p>
-                <p className="text-success font-medium">
-                  Employee: employee / employee123
-                </p>
+              <div className="text-center text-sm mt-4">
+                <span className="text-muted-foreground">
+                  Don't have an account?{" "}
+                </span>
+                <Link
+                  href="/register"
+                  className="text-primary hover:underline font-medium"
+                >
+                  Register
+                </Link>
               </div>
-            </div>
+            </form>
           </CardContent>
         </Card>
       </div>

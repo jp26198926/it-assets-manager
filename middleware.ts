@@ -15,7 +15,7 @@ const sessionOptions = {
 };
 
 // Public routes that don't require authentication
-const publicRoutes = ["/login", "/api/auth"];
+const publicRoutes = ["/login", "/register", "/api/auth"];
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -30,7 +30,7 @@ export async function middleware(request: NextRequest) {
   const session = await getIronSession<SessionData>(
     request,
     response,
-    sessionOptions
+    sessionOptions,
   );
 
   // Redirect to login if not authenticated
