@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { EditCategoryDialog } from "./edit-category-dialog";
 import { deleteCategory } from "@/lib/actions/categories";
+import { hasPermission } from "@/lib/models/User";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { Pencil, Trash2 } from "lucide-react";
@@ -23,11 +24,13 @@ import { Pencil, Trash2 } from "lucide-react";
 interface CategoryListProps {
   initialCategories: CategorySerialized[];
   onCategoryChange?: () => void;
+  userRole: string | null;
 }
 
 export function CategoryList({
   initialCategories,
   onCategoryChange,
+  userRole,
 }: CategoryListProps) {
   const [categories, setCategories] =
     useState<CategorySerialized[]>(initialCategories);
@@ -36,6 +39,11 @@ export function CategoryList({
   const [deletingCategory, setDeletingCategory] =
     useState<CategorySerialized | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  const canUpdate =
+    userRole && hasPermission(userRole as any, "categories", "update");
+  const canDelete =
+    userRole && hasPermission(userRole as any, "categories", "delete");
 
   useEffect(() => {
     setCategories(initialCategories);
@@ -100,30 +108,38 @@ export function CategoryList({
       ),
       className: "hidden lg:table-cell",
     },
-    {
-      key: "actions",
-      header: "",
-      cell: (cat: CategorySerialized) => (
-        <div className="flex items-center gap-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setEditingCategory(cat)}
-            className="h-8 w-8 p-0"
-          >
-            <Pencil className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setDeletingCategory(cat)}
-            className="h-8 w-8 p-0 text-destructive hover:text-destructive"
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
-        </div>
-      ),
-    },
+    ...(canUpdate || canDelete
+      ? [
+          {
+            key: "actions",
+            header: "",
+            cell: (cat: CategorySerialized) => (
+              <div className="flex items-center gap-2">
+                {canUpdate && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setEditingCategory(cat)}
+                    className="h-8 w-8 p-0"
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                )}
+                {canDelete && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setDeletingCategory(cat)}
+                    className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
+            ),
+          },
+        ]
+      : []),
   ];
 
   return (

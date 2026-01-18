@@ -5,16 +5,12 @@ import { MainLayout } from "@/components/layout/main-layout";
 import { CompanyDetailsForm } from "@/components/settings/company-details-form";
 import { ThemeSettingsForm } from "@/components/settings/theme-settings-form";
 import { EmailConfigForm } from "@/components/settings/email-config-form";
+import { hasPermission } from "@/lib/models/User";
 
 export default async function SettingsPage() {
   const user = await getCurrentUser();
 
-  if (!user) {
-    redirect("/login");
-  }
-
-  // Only admins can access settings
-  if (user.role !== "admin") {
+  if (!user || !hasPermission(user.role, "users", "update")) {
     redirect("/");
   }
 

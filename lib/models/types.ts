@@ -138,6 +138,15 @@ export interface Department {
   createdAt: Date;
 }
 
+// Serialized version for client components
+export interface DepartmentSerialized {
+  _id: string;
+  name: string;
+  code: string;
+  description?: string;
+  createdAt: string;
+}
+
 export interface Category {
   _id?: ObjectId;
   name: string;
@@ -169,6 +178,27 @@ export interface Issuance {
   issuedAt: Date;
   returnedAt?: Date;
   expectedReturn?: Date;
+  notes?: string;
+  status: "active" | "returned";
+  returnRemarks?: string;
+  returnStatus?: "good" | "damaged" | "needs_repair" | "beyond_repair";
+}
+
+// Serialized version for client components
+export interface IssuanceSerialized {
+  _id: string;
+  itemId: string;
+  itemBarcode: string;
+  itemName: string;
+  issuedTo: {
+    type: "employee" | "department";
+    id: string;
+    name: string;
+  };
+  issuedBy: string;
+  issuedAt: string;
+  returnedAt?: string;
+  expectedReturn?: string;
   notes?: string;
   status: "active" | "returned";
   returnRemarks?: string;

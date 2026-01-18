@@ -1,28 +1,36 @@
-"use client"
+"use client";
 
-import type React from "react"
+import type React from "react";
+import type { ObjectId } from "mongodb";
 
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Input } from "@/components/ui/input"
-import { Search } from "lucide-react"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Input } from "@/components/ui/input";
+import { Search } from "lucide-react";
 
 interface Column<T> {
-  key: string
-  header: string
-  cell: (item: T) => React.ReactNode
-  className?: string
+  key: string;
+  header: string;
+  cell: (item: T) => React.ReactNode;
+  className?: string;
 }
 
 interface DataTableProps<T> {
-  data: T[]
-  columns: Column<T>[]
-  searchPlaceholder?: string
-  searchValue?: string
-  onSearchChange?: (value: string) => void
-  emptyMessage?: string
+  data: T[];
+  columns: Column<T>[];
+  searchPlaceholder?: string;
+  searchValue?: string;
+  onSearchChange?: (value: string) => void;
+  emptyMessage?: string;
 }
 
-export function DataTable<T extends { _id?: string }>({
+export function DataTable<T extends { _id?: string | ObjectId }>({
   data,
   columns,
   searchPlaceholder = "Search...",
@@ -50,7 +58,13 @@ export function DataTable<T extends { _id?: string }>({
             <TableHeader>
               <TableRow className="bg-secondary/50 hover:bg-secondary/50">
                 {columns.map((column) => (
-                  <TableHead key={column.key} className={cn("text-muted-foreground font-medium", column.className)}>
+                  <TableHead
+                    key={column.key}
+                    className={cn(
+                      "text-muted-foreground font-medium",
+                      column.className,
+                    )}
+                  >
                     {column.header}
                   </TableHead>
                 ))}
@@ -59,13 +73,19 @@ export function DataTable<T extends { _id?: string }>({
             <TableBody>
               {data.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={columns.length} className="h-24 text-center text-muted-foreground">
+                  <TableCell
+                    colSpan={columns.length}
+                    className="h-24 text-center text-muted-foreground"
+                  >
                     {emptyMessage}
                   </TableCell>
                 </TableRow>
               ) : (
                 data.map((item, index) => (
-                  <TableRow key={item._id || index} className="hover:bg-secondary/30">
+                  <TableRow
+                    key={item._id || index}
+                    className="hover:bg-secondary/30"
+                  >
                     {columns.map((column) => (
                       <TableCell key={column.key} className={column.className}>
                         {column.cell(item)}
@@ -79,9 +99,9 @@ export function DataTable<T extends { _id?: string }>({
         </div>
       </div>
     </div>
-  )
+  );
 }
 
 function cn(...classes: (string | undefined)[]) {
-  return classes.filter(Boolean).join(" ")
+  return classes.filter(Boolean).join(" ");
 }

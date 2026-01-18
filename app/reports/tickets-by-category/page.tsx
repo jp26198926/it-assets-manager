@@ -5,8 +5,21 @@ import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { TicketsByCategoryReport } from "@/components/reports/tickets-by-category-report";
 import { getTicketsWithDepartment } from "@/lib/actions/tickets";
+import { getUserProfile } from "@/lib/actions/user";
+import { hasPermission } from "@/lib/models/User";
+import { redirect } from "next/navigation";
 
 export default async function TicketsByCategoryPage() {
+  const userResult = await getUserProfile();
+
+  if (
+    !userResult.success ||
+    !userResult.data ||
+    !hasPermission(userResult.data.role, "reports", "read")
+  ) {
+    redirect("/");
+  }
+
   const tickets = await getTicketsWithDepartment();
 
   return (

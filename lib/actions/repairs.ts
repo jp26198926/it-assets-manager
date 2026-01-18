@@ -159,6 +159,10 @@ export async function markReturnedToUser(
   id: string,
 ): Promise<{ success: boolean; error?: string }> {
   try {
+    const user = await requireAuth();
+    if (!hasPermission(user.role, "repairs", "update")) {
+      return { success: false, error: "Unauthorized" };
+    }
     const db = await getDatabase();
     const repairCollection = db.collection<RepairRecord>("repairs");
     const ticketCollection = db.collection<Ticket>("tickets");

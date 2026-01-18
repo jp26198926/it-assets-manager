@@ -25,25 +25,51 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { UserMenu } from "./user-menu";
 import { getCurrentUser } from "@/lib/actions/auth";
+import { hasPermission } from "@/lib/models/User";
 
 const navigation = [
   { name: "Dashboard", href: "/", icon: LayoutDashboard },
   { type: "separator" as const },
-  { name: "Tickets", href: "/tickets", icon: Ticket },
-  { name: "Knowledge Base", href: "/knowledgebase", icon: BookOpen },
+  { name: "Tickets", href: "/tickets", icon: Ticket, resource: "tickets" },
+  {
+    name: "Knowledge Base",
+    href: "/knowledgebase",
+    icon: BookOpen,
+    resource: "knowledge",
+  },
   { type: "separator" as const },
-  { name: "Inventory", href: "/inventory", icon: Package },
-  { name: "Issuance", href: "/issuance", icon: ArrowRightLeft },
+  {
+    name: "Inventory",
+    href: "/inventory",
+    icon: Package,
+    resource: "inventory",
+  },
+  {
+    name: "Issuance",
+    href: "/issuance",
+    icon: ArrowRightLeft,
+    resource: "issuance",
+  },
   { type: "separator" as const },
-  { name: "Reports", href: "/reports", icon: FileText },
+  { name: "Reports", href: "/reports", icon: FileText, resource: "reports" },
   { type: "separator" as const },
-  { name: "Departments", href: "/departments", icon: Building2 },
-  { name: "Employees", href: "/employees", icon: Users },
-  { name: "Categories", href: "/categories", icon: FolderTree },
+  {
+    name: "Departments",
+    href: "/departments",
+    icon: Building2,
+    resource: "departments",
+  },
+  { name: "Employees", href: "/employees", icon: Users, resource: "employees" },
+  {
+    name: "Categories",
+    href: "/categories",
+    icon: FolderTree,
+    resource: "categories",
+  },
   { type: "separator" as const },
-  { name: "Roles", href: "/roles", icon: Shield, adminOnly: true },
-  { name: "Users", href: "/users", icon: UserCog, adminOnly: true },
-  { name: "Settings", href: "/settings", icon: Settings },
+  { name: "Roles", href: "/roles", icon: Shield, resource: "users" },
+  { name: "Users", href: "/users", icon: UserCog, resource: "users" },
+  { name: "Settings", href: "/settings", icon: Settings, resource: "users" },
 ];
 
 export function Sidebar() {
@@ -123,10 +149,14 @@ export function Sidebar() {
             }
 
             const isActive = pathname === item.href;
-            // Hide admin-only items for non-admin users
-            if (item.adminOnly && user?.role !== "admin") {
-              return null;
+
+            // Check if user has read permission for this resource
+            if (item.resource && user?.role) {
+              if (!hasPermission(user.role as any, item.resource, "read")) {
+                return null;
+              }
             }
+
             return (
               <Link
                 key={item.name}

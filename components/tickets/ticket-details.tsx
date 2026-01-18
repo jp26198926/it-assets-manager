@@ -50,6 +50,7 @@ interface TicketDetailsProps {
     id: string;
     name: string;
     email: string;
+    role: string;
   };
 }
 
@@ -186,6 +187,7 @@ export function TicketDetails({ ticket, currentUser }: TicketDetailsProps) {
             name: currentUser.name,
             email: currentUser.email,
           }}
+          userRole={currentUser.role as any}
           reportedByEmail={ticket.reportedBy.email}
           assignedUserEmail={(ticket as any).assignedUser?.email}
           assignedToId={(ticket as any).assignedToId}

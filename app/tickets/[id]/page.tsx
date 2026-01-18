@@ -3,11 +3,12 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
 import { getTicketWithDepartment } from "@/lib/actions/tickets";
 import { getCurrentUser } from "@/lib/actions/auth";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { TicketDetails } from "@/components/tickets/ticket-details";
 import { TicketComments } from "@/components/tickets/ticket-comments";
+import { hasPermission } from "@/lib/models/User";
 
 export default async function TicketDetailPage({
   params,
@@ -24,8 +25,8 @@ export default async function TicketDetailPage({
     notFound();
   }
 
-  if (!user) {
-    notFound();
+  if (!user || !hasPermission(user.role, "tickets", "read")) {
+    redirect("/");
   }
 
   return (

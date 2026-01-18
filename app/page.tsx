@@ -3,8 +3,9 @@ import { PageHeader } from "@/components/ui/page-header";
 import { StatCard } from "@/components/ui/stat-card";
 import { Badge } from "@/components/ui/badge";
 import { getInventoryStats } from "@/lib/actions/inventory";
-import { getTicketStats } from "@/lib/actions/tickets";
+import { getTicketStats, getTicketTrends } from "@/lib/actions/tickets";
 import { getCurrentUser } from "@/lib/actions/auth";
+import { redirect } from "next/navigation";
 import {
   Package,
   PackageCheck,
@@ -18,12 +19,19 @@ import {
 } from "lucide-react";
 import { DashboardCharts } from "@/components/dashboard/dashboard-charts";
 import { RecentActivity } from "@/components/dashboard/recent-activity";
+import { TicketTrendsWrapper } from "@/components/dashboard/ticket-trends-wrapper";
 
 export default async function DashboardPage() {
-  const [inventoryStats, ticketStats, user] = await Promise.all([
+  const user = await getCurrentUser();
+
+  if (!user) {
+    redirect("/login");
+  }
+
+  const [inventoryStats, ticketStats, ticketTrends] = await Promise.all([
     getInventoryStats(),
     getTicketStats(),
-    getCurrentUser(),
+    getTicketTrends("monthly"), // Default to monthly view
   ]);
 
   return (
@@ -106,12 +114,22 @@ export default async function DashboardPage() {
           </div>
         </div>
 
+        {/* Ticket Trends Chart */}
+        <TicketTrendsWrapper
+          initialData={ticketTrends}
+          initialPeriod="monthly"
+        />
+
         <div className="grid gap-6 lg:grid-cols-2">
           <DashboardCharts
             inventoryStats={inventoryStats}
             ticketStats={ticketStats}
           />
-          <RecentActivity />
+          <RecentActivity
+            userRole={user.role}
+            userEmail={user.email}
+            userId={user.id}
+          />
         </div>
       </div>
     </MainLayout>

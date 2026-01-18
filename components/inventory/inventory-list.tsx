@@ -42,6 +42,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
+import { hasPermission } from "@/lib/models/User";
 
 const statusVariants: Record<
   ItemStatus,
@@ -56,8 +57,10 @@ const statusVariants: Record<
 
 export function InventoryList({
   initialItems,
+  userRole,
 }: {
   initialItems: InventoryItemWithCategorySerialized[];
+  userRole: string | null;
 }) {
   const { toast } = useToast();
   const [items, setItems] = useState(initialItems);
@@ -88,7 +91,7 @@ export function InventoryList({
   const handleFilterChange = (
     newSearch: string,
     newStatus: string,
-    newCategory: string
+    newCategory: string,
   ) => {
     startTransition(async () => {
       const filters: {
@@ -160,7 +163,10 @@ export function InventoryList({
     const filtered = await getInventoryItems(filters);
     setItems(filtered);
   };
-
+  const canUpdate =
+    userRole && hasPermission(userRole as any, "inventory", "update");
+  const canDelete =
+    userRole && hasPermission(userRole as any, "inventory", "delete");
   const showQrCode = (barcode: string) => {
     setSelectedBarcode(barcode);
     setQrDialogOpen(true);
@@ -223,37 +229,60 @@ export function InventoryList({
       ),
       className: "hidden lg:table-cell",
     },
-    {
-      key: "actions",
-      header: "Actions",
-      cell: (item: InventoryItemWithCategorySerialized) => (
-        <div className="flex items-center gap-1">
-          <Link href={`/inventory/${item._id}`}>
-            <Button variant="ghost" size="sm" title="View Details">
-              <Eye className="h-4 w-4" />
-            </Button>
-          </Link>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => handleEdit(item)}
-            title="Edit Item"
-          >
-            <Pencil className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => handleDeleteClick(item)}
-            title="Delete Item"
-            className="text-destructive hover:text-destructive"
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
-        </div>
-      ),
-      className: "w-[120px]",
-    },
+    ...(canUpdate || canDelete
+      ? [
+          {
+            key: "actions",
+            header: "Actions",
+            cell: (item: InventoryItemWithCategorySerialized) => (
+              <div className="flex items-center gap-1">
+                <Link href={`/inventory/${item._id}`}>
+                  <Button variant="ghost" size="sm" title="View Details">
+                    <Eye className="h-4 w-4" />
+                  </Button>
+                </Link>
+                {canUpdate && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleEdit(item)}
+                    title="Edit Item"
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                )}
+                {canDelete && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleDeleteClick(item)}
+                    title="Delete Item"
+                    className="text-destructive hover:text-destructive"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
+            ),
+            className: "w-[120px]",
+          },
+        ]
+      : [
+          {
+            key: "actions",
+            header: "Actions",
+            cell: (item: InventoryItemWithCategorySerialized) => (
+              <div className="flex items-center gap-1">
+                <Link href={`/inventory/${item._id}`}>
+                  <Button variant="ghost" size="sm" title="View Details">
+                    <Eye className="h-4 w-4" />
+                  </Button>
+                </Link>
+              </div>
+            ),
+            className: "w-[120px]",
+          },
+        ]),
   ];
 
   return (

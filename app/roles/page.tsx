@@ -7,12 +7,13 @@ import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { RoleList } from "@/components/roles/role-list";
 import { AddRoleDialog } from "@/components/roles/add-role-dialog";
+import { hasPermission } from "@/lib/models/User";
 
 export default async function RolesPage() {
   const user = await getCurrentUser();
 
-  if (!user || user.role !== "admin") {
-    redirect("/login");
+  if (!user || !hasPermission(user.role, "users", "read")) {
+    redirect("/");
   }
 
   const rolesResult = await getRoles();
@@ -25,7 +26,7 @@ export default async function RolesPage() {
           description="Manage user roles and permissions"
         />
 
-        <RoleList initialRoles={rolesResult.data || []} />
+        <RoleList initialRoles={rolesResult.data || []} userRole={user.role} />
       </div>
     </MainLayout>
   );

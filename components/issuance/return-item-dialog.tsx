@@ -19,12 +19,12 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { returnItem } from "@/lib/actions/issuance";
-import type { Issuance } from "@/lib/models/types";
+import type { IssuanceSerialized } from "@/lib/models/types";
 import { Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface ReturnItemDialogProps {
-  issuance: Issuance;
+  issuance: IssuanceSerialized;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess?: () => void;

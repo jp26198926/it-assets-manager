@@ -4,6 +4,8 @@ import { ObjectId } from "mongodb";
 import { getDatabase } from "@/lib/mongodb";
 import type { Ticket, TicketStatus, TicketPriority } from "@/lib/models/types";
 import { revalidatePath } from "next/cache";
+import { requireAuth } from "./auth";
+import { hasPermission } from "../models/User";
 // Helper function to serialize tickets for client components
 function serializeTicket(ticket: any) {
   return {
@@ -77,6 +79,11 @@ export async function createTicket(data: {
   }[];
 }): Promise<{ success: boolean; ticket?: Ticket; error?: string }> {
   try {
+    const user = await requireAuth();
+    if (!hasPermission(user.role, "tickets", "create")) {
+      return { success: false, error: "Unauthorized" };
+    }
+
     const db = await getDatabase();
     const collection = db.collection<Ticket>("tickets");
 
@@ -121,10 +128,25 @@ export async function getTickets(filters?: {
   search?: string;
 }): Promise<Ticket[]> {
   try {
+    const user = await requireAuth();
+    if (!hasPermission(user.role, "tickets", "read")) {
+      return [];
+    }
+
     const db = await getDatabase();
     const collection = db.collection<Ticket>("tickets");
 
     const query: Record<string, unknown> = {};
+
+    // Role-based filtering
+    if (user.role === "employee") {
+      query["reportedBy.email"] = user.email;
+    } else if (user.role === "technician") {
+      query.$or = [
+        { "reportedBy.email": user.email },
+        { assignedToId: new ObjectId(user.id) },
+      ];
+    }
 
     if (filters?.status) {
       query.status = filters.status;
@@ -186,6 +208,11 @@ export async function updateTicketStatus(
   assignedToId?: string,
 ): Promise<{ success: boolean; error?: string }> {
   try {
+    const user = await requireAuth();
+    if (!hasPermission(user.role, "tickets", "update")) {
+      return { success: false, error: "Unauthorized" };
+    }
+
     const db = await getDatabase();
     const ticketsCollection = db.collection<Ticket>("tickets");
 
@@ -267,6 +294,11 @@ export async function updateTicketStatus(
 
 export async function getTicketStats() {
   try {
+    const user = await requireAuth();
+    if (!hasPermission(user.role, "tickets", "read")) {
+      return { total: 0, open: 0, inProgress: 0, resolved: 0, closed: 0 };
+    }
+
     const db = await getDatabase();
     const collection = db.collection<Ticket>("tickets");
 
@@ -285,6 +317,169 @@ export async function getTicketStats() {
   }
 }
 
+export async function getTicketTrends(
+  period: "daily" | "weekly" | "monthly" | "yearly",
+) {
+  try {
+    const user = await requireAuth();
+    if (!hasPermission(user.role, "tickets", "read")) {
+      return [];
+    }
+
+    const db = await getDatabase();
+    const collection = db.collection<Ticket>("tickets");
+
+    // Calculate date range and grouping based on period
+    const now = new Date();
+    let startDate: Date;
+    let dateFormat: string;
+    let numPeriods: number;
+
+    switch (period) {
+      case "daily":
+        startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000); // Last 30 days
+        dateFormat = "%Y-%m-%d";
+        numPeriods = 30;
+        break;
+      case "weekly":
+        startDate = new Date(now.getTime() - 12 * 7 * 24 * 60 * 60 * 1000); // Last 12 weeks
+        dateFormat = "%Y-W%V";
+        numPeriods = 12;
+        break;
+      case "monthly":
+        startDate = new Date(now.getFullYear(), now.getMonth() - 11, 1); // Last 12 months
+        dateFormat = "%Y-%m";
+        numPeriods = 12;
+        break;
+      case "yearly":
+        startDate = new Date(now.getFullYear() - 4, 0, 1); // Last 5 years
+        dateFormat = "%Y";
+        numPeriods = 5;
+        break;
+    }
+
+    // Role-based query filter
+    const matchQuery: Record<string, unknown> = {
+      createdAt: { $gte: startDate },
+    };
+
+    if (user.role === "employee") {
+      matchQuery["reportedBy.email"] = user.email;
+    } else if (user.role === "technician") {
+      matchQuery.$or = [
+        { "reportedBy.email": user.email },
+        { assignedToId: new ObjectId(user.id) },
+      ];
+    }
+
+    // Aggregate tickets by period
+    const receivedData = await collection
+      .aggregate([
+        { $match: matchQuery },
+        {
+          $group: {
+            _id: { $dateToString: { format: dateFormat, date: "$createdAt" } },
+            count: { $sum: 1 },
+          },
+        },
+        { $sort: { _id: 1 } },
+      ])
+      .toArray();
+
+    // Get resolved tickets
+    const resolvedMatchQuery = {
+      ...matchQuery,
+      resolvedAt: { $gte: startDate, $ne: null },
+    };
+
+    const resolvedData = await collection
+      .aggregate([
+        { $match: resolvedMatchQuery },
+        {
+          $group: {
+            _id: { $dateToString: { format: dateFormat, date: "$resolvedAt" } },
+            count: { $sum: 1 },
+          },
+        },
+        { $sort: { _id: 1 } },
+      ])
+      .toArray();
+
+    // Create a map for easy lookup
+    const receivedMap = new Map(receivedData.map((d) => [d._id, d.count]));
+    const resolvedMap = new Map(resolvedData.map((d) => [d._id, d.count]));
+
+    // Generate complete date range
+    const trends = [];
+    for (let i = numPeriods - 1; i >= 0; i--) {
+      let date: Date;
+      let label: string;
+
+      switch (period) {
+        case "daily":
+          date = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
+          label = date.toISOString().split("T")[0];
+          break;
+        case "weekly":
+          date = new Date(now.getTime() - i * 7 * 24 * 60 * 60 * 1000);
+          const year = date.getFullYear();
+          const week = getWeekNumber(date);
+          label = `${year}-W${week.toString().padStart(2, "0")}`;
+          break;
+        case "monthly":
+          date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+          label = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, "0")}`;
+          break;
+        case "yearly":
+          date = new Date(now.getFullYear() - i, 0, 1);
+          label = date.getFullYear().toString();
+          break;
+      }
+
+      trends.push({
+        period: formatPeriodLabel(label, period),
+        received: receivedMap.get(label) || 0,
+        resolved: resolvedMap.get(label) || 0,
+      });
+    }
+
+    return trends;
+  } catch (error) {
+    console.error("Error fetching ticket trends:", error);
+    return [];
+  }
+}
+
+// Helper function to get week number
+function getWeekNumber(date: Date): number {
+  const d = new Date(
+    Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()),
+  );
+  const dayNum = d.getUTCDay() || 7;
+  d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  return Math.ceil(((d.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
+}
+
+// Helper function to format period labels
+function formatPeriodLabel(label: string, period: string): string {
+  if (period === "daily") {
+    const date = new Date(label);
+    return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  } else if (period === "weekly") {
+    return label.replace("W", "Week ");
+  } else if (period === "monthly") {
+    const [year, month] = label.split("-");
+    const date = new Date(parseInt(year), parseInt(month) - 1);
+    return date.toLocaleDateString("en-US", {
+      month: "short",
+      year: "numeric",
+    });
+  } else {
+    return label;
+  }
+}
+
 // Get tickets with populated department data
 export async function getTicketsWithDepartment(filters?: {
   status?: TicketStatus;
@@ -292,11 +487,26 @@ export async function getTicketsWithDepartment(filters?: {
   search?: string;
 }) {
   try {
+    const user = await requireAuth();
+
     const db = await getDatabase();
     const ticketsCollection = db.collection("tickets");
     const departmentsCollection = db.collection("departments");
 
     const query: Record<string, unknown> = {};
+
+    // Role-based filtering
+    if (user.role === "employee") {
+      // Employee can only see their own tickets
+      query["reportedBy.email"] = user.email;
+    } else if (user.role === "technician") {
+      // Technician can see their own tickets OR tickets assigned to them
+      query.$or = [
+        { "reportedBy.email": user.email },
+        { assignedToId: new ObjectId(user.id) },
+      ];
+    }
+    // Admin and manager can see all tickets (no additional filter)
 
     if (filters?.status) {
       query.status = filters.status;
@@ -307,12 +517,20 @@ export async function getTicketsWithDepartment(filters?: {
     }
 
     if (filters?.search) {
-      query.$or = [
+      const searchConditions = [
         { ticketNumber: { $regex: filters.search, $options: "i" } },
         { title: { $regex: filters.search, $options: "i" } },
         { "reportedBy.name": { $regex: filters.search, $options: "i" } },
         { itemBarcode: { $regex: filters.search, $options: "i" } },
       ];
+
+      // If there's already an $or from role filtering, combine them with $and
+      if (query.$or) {
+        query.$and = [{ $or: query.$or }, { $or: searchConditions }];
+        delete query.$or;
+      } else {
+        query.$or = searchConditions;
+      }
     }
 
     const tickets = await ticketsCollection
@@ -381,12 +599,17 @@ export async function getTicketsWithDepartment(filters?: {
 // Get single ticket with populated department data
 export async function getTicketWithDepartment(id: string) {
   try {
+    const user = await requireAuth();
+
     const db = await getDatabase();
     const ticketsCollection = db.collection("tickets");
 
+    // First get the ticket to check access
+    const matchQuery: Record<string, unknown> = { _id: new ObjectId(id) };
+
     const tickets = await ticketsCollection
       .aggregate([
-        { $match: { _id: new ObjectId(id) } },
+        { $match: matchQuery },
         {
           $lookup: {
             from: "departments",
@@ -439,7 +662,29 @@ export async function getTicketWithDepartment(id: string) {
       ])
       .toArray();
 
-    return tickets.length > 0 ? serializeTicket(tickets[0]) : null;
+    if (tickets.length === 0) {
+      return null;
+    }
+
+    const ticket = tickets[0];
+
+    // Role-based access control
+    if (user.role === "employee") {
+      // Employee can only view their own tickets
+      if (ticket.reportedBy?.email !== user.email) {
+        return null;
+      }
+    } else if (user.role === "technician") {
+      // Technician can view their own tickets OR tickets assigned to them
+      const isReporter = ticket.reportedBy?.email === user.email;
+      const isAssigned = ticket.assignedToId?.toString() === user.id;
+      if (!isReporter && !isAssigned) {
+        return null;
+      }
+    }
+    // Admin and manager can view all tickets
+
+    return serializeTicket(ticket);
   } catch (error) {
     console.error("Error fetching ticket with department:", error);
     return null;
@@ -454,8 +699,26 @@ export async function addCommentToTicket(
   userEmail: string,
 ): Promise<{ success: boolean; error?: string }> {
   try {
+    const user = await requireAuth();
+
     const db = await getDatabase();
     const collection = db.collection<Ticket>("tickets");
+
+    // Get the ticket to check ownership/assignment
+    const ticket = await collection.findOne({ _id: new ObjectId(ticketId) });
+
+    if (!ticket) {
+      return { success: false, error: "Ticket not found" };
+    }
+
+    // Check if user can comment: owner, assigned technician, or has update permission
+    const isOwner = ticket.reportedBy.email === user.email;
+    const isAssigned = ticket.assignedToId?.toString() === user.id;
+    const hasUpdatePermission = hasPermission(user.role, "tickets", "update");
+
+    if (!isOwner && !isAssigned && !hasUpdatePermission) {
+      return { success: false, error: "Unauthorized" };
+    }
 
     const newComment = {
       _id: new ObjectId(),

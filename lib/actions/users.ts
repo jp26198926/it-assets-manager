@@ -2,10 +2,12 @@
 
 import { getDatabase } from "@/lib/mongodb";
 import type { User } from "@/lib/models/User";
+import { hasPermission } from "@/lib/models/User";
 import type { UserSerialized } from "@/lib/models/types";
 import { revalidatePath } from "next/cache";
 import { ObjectId } from "mongodb";
 import bcrypt from "bcryptjs";
+import { requireAuth } from "./auth";
 
 // Helper to serialize user for client
 function serializeUser(user: User): UserSerialized {
@@ -26,6 +28,11 @@ export async function getUsers(): Promise<{
   error?: string;
 }> {
   try {
+    const authUser = await requireAuth();
+    if (!hasPermission(authUser.role, "users", "read")) {
+      return { success: false, error: "Insufficient permissions" };
+    }
+
     const db = await getDatabase();
     const collection = db.collection<User>("users");
 
@@ -79,6 +86,11 @@ export async function createUser(data: {
   createdBy?: string;
 }): Promise<{ success: boolean; data?: UserSerialized; error?: string }> {
   try {
+    const authUser = await requireAuth();
+    if (!hasPermission(authUser.role, "users", "create")) {
+      return { success: false, error: "Insufficient permissions" };
+    }
+
     const db = await getDatabase();
     const collection = db.collection<User>("users");
 
@@ -144,6 +156,11 @@ export async function updateUser(
   },
 ): Promise<{ success: boolean; data?: UserSerialized; error?: string }> {
   try {
+    const authUser = await requireAuth();
+    if (!hasPermission(authUser.role, "users", "update")) {
+      return { success: false, error: "Insufficient permissions" };
+    }
+
     const db = await getDatabase();
     const collection = db.collection<User>("users");
 
@@ -206,6 +223,11 @@ export async function deleteUser(
   id: string,
 ): Promise<{ success: boolean; error?: string }> {
   try {
+    const authUser = await requireAuth();
+    if (!hasPermission(authUser.role, "users", "delete")) {
+      return { success: false, error: "Insufficient permissions" };
+    }
+
     const db = await getDatabase();
     const collection = db.collection<User>("users");
 
@@ -230,6 +252,11 @@ export async function toggleUserStatus(
   updatedBy?: string,
 ): Promise<{ success: boolean; data?: UserSerialized; error?: string }> {
   try {
+    const authUser = await requireAuth();
+    if (!hasPermission(authUser.role, "users", "update")) {
+      return { success: false, error: "Insufficient permissions" };
+    }
+
     const db = await getDatabase();
     const collection = db.collection<User>("users");
 

@@ -1,8 +1,19 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getTickets } from "@/lib/actions/tickets";
 import { StatusBadge } from "@/components/ui/status-badge";
+import { UserRole } from "@/lib/models/User";
 
-export async function RecentActivity() {
+interface RecentActivityProps {
+  userRole: UserRole;
+  userEmail: string;
+  userId: string;
+}
+
+export async function RecentActivity({
+  userRole,
+  userEmail,
+  userId,
+}: RecentActivityProps) {
   const tickets = await getTickets();
 
   const recentTickets = tickets.slice(0, 5);

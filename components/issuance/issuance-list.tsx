@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import type { Issuance } from "@/lib/models/types";
+import type { IssuanceSerialized } from "@/lib/models/types";
 import { DataTable } from "@/components/ui/data-table";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Button } from "@/components/ui/button";
@@ -18,11 +18,14 @@ import { Undo2, Eye } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { ReturnItemDialog } from "@/components/issuance/return-item-dialog";
 import { IssuanceDetailsDialog } from "@/components/issuance/issuance-details-dialog";
+import { hasPermission } from "@/lib/models/User";
 
 export function IssuanceList({
   initialIssuances,
+  userRole,
 }: {
-  initialIssuances: Issuance[];
+  initialIssuances: IssuanceSerialized[];
+  userRole: string | null;
 }) {
   const router = useRouter();
   const [issuances, setIssuances] = useState(initialIssuances);
@@ -31,9 +34,8 @@ export function IssuanceList({
   const [isPending, startTransition] = useTransition();
   const [returnDialogOpen, setReturnDialogOpen] = useState(false);
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
-  const [selectedIssuance, setSelectedIssuance] = useState<Issuance | null>(
-    null,
-  );
+  const [selectedIssuance, setSelectedIssuance] =
+    useState<IssuanceSerialized | null>(null);
 
   const handleFilterChange = (newSearch: string, newStatus: string) => {
     startTransition(async () => {
@@ -47,12 +49,12 @@ export function IssuanceList({
     });
   };
 
-  const handleReturnClick = (issuance: Issuance) => {
+  const handleReturnClick = (issuance: IssuanceSerialized) => {
     setSelectedIssuance(issuance);
     setReturnDialogOpen(true);
   };
 
-  const handleViewDetails = (issuance: Issuance) => {
+  const handleViewDetails = (issuance: IssuanceSerialized) => {
     setSelectedIssuance(issuance);
     setDetailsDialogOpen(true);
   };
@@ -62,11 +64,14 @@ export function IssuanceList({
     handleFilterChange(search, statusFilter);
   };
 
+  const canUpdate =
+    userRole && hasPermission(userRole as any, "issuance", "update");
+
   const columns = [
     {
       key: "itemBarcode",
       header: "Item",
-      cell: (issuance: Issuance) => (
+      cell: (issuance: IssuanceSerialized) => (
         <div>
           <p className="font-medium">{issuance.itemName}</p>
           <p className="text-xs text-muted-foreground font-mono">
@@ -78,7 +83,7 @@ export function IssuanceList({
     {
       key: "issuedTo",
       header: "Issued To",
-      cell: (issuance: Issuance) => (
+      cell: (issuance: IssuanceSerialized) => (
         <div>
           <p className="font-medium">{issuance.issuedTo.name}</p>
           <p className="text-xs text-muted-foreground capitalize">
@@ -90,7 +95,7 @@ export function IssuanceList({
     {
       key: "issuedAt",
       header: "Issued Date",
-      cell: (issuance: Issuance) => (
+      cell: (issuance: IssuanceSerialized) => (
         <span className="text-sm">
           {format(new Date(issuance.issuedAt), "MMM d, yyyy")}
         </span>
@@ -100,7 +105,7 @@ export function IssuanceList({
     {
       key: "issuedBy",
       header: "Issued By",
-      cell: (issuance: Issuance) => (
+      cell: (issuance: IssuanceSerialized) => (
         <span className="text-sm text-muted-foreground">
           {issuance.issuedBy}
         </span>
@@ -110,7 +115,7 @@ export function IssuanceList({
     {
       key: "status",
       header: "Status",
-      cell: (issuance: Issuance) => (
+      cell: (issuance: IssuanceSerialized) => (
         <StatusBadge
           variant={issuance.status === "active" ? "info" : "secondary"}
         >
@@ -121,7 +126,7 @@ export function IssuanceList({
     {
       key: "actions",
       header: "",
-      cell: (issuance: Issuance) => (
+      cell: (issuance: IssuanceSerialized) => (
         <div className="flex items-center gap-2">
           <Button
             variant="ghost"
@@ -131,7 +136,7 @@ export function IssuanceList({
             <Eye className="h-4 w-4" />
             <span className="ml-2 hidden sm:inline">View</span>
           </Button>
-          {issuance.status === "active" && (
+          {issuance.status === "active" && canUpdate && (
             <Button
               variant="ghost"
               size="sm"

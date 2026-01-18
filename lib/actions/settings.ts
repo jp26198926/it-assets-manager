@@ -3,6 +3,8 @@
 import { getDatabase } from "@/lib/mongodb";
 import type { AppSettings, AppSettingsSerialized } from "@/lib/models/types";
 import { revalidatePath } from "next/cache";
+import { requireAuth } from "./auth";
+import { hasPermission } from "../models/User";
 
 // Helper function to serialize settings for client components
 function serializeSettings(settings: AppSettings): AppSettingsSerialized {
@@ -68,6 +70,11 @@ export async function updateCompanyDetails(data: {
   updatedBy?: string;
 }): Promise<{ success: boolean; error?: string }> {
   try {
+    const user = await requireAuth();
+    if (!hasPermission(user.role, "users", "update")) {
+      return { success: false, error: "Unauthorized" };
+    }
+
     const db = await getDatabase();
     const collection = db.collection<AppSettings>("settings");
 
@@ -98,6 +105,11 @@ export async function updateThemeSettings(data: {
   updatedBy?: string;
 }): Promise<{ success: boolean; error?: string }> {
   try {
+    const user = await requireAuth();
+    if (!hasPermission(user.role, "users", "update")) {
+      return { success: false, error: "Unauthorized" };
+    }
+
     const db = await getDatabase();
     const collection = db.collection<AppSettings>("settings");
 
@@ -142,6 +154,11 @@ export async function updateEmailConfig(data: {
   updatedBy?: string;
 }): Promise<{ success: boolean; error?: string }> {
   try {
+    const user = await requireAuth();
+    if (!hasPermission(user.role, "users", "update")) {
+      return { success: false, error: "Unauthorized" };
+    }
+
     const db = await getDatabase();
     const collection = db.collection<AppSettings>("settings");
 

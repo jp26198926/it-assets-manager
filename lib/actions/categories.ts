@@ -4,6 +4,8 @@ import { ObjectId } from "mongodb";
 import { getDatabase } from "@/lib/mongodb";
 import type { Category, CategorySerialized } from "@/lib/models/types";
 import { revalidatePath } from "next/cache";
+import { requireAuth } from "./auth";
+import { hasPermission } from "@/lib/models/User";
 
 export async function createCategory(data: {
   name: string;
@@ -11,6 +13,15 @@ export async function createCategory(data: {
   description?: string;
 }): Promise<{ success: boolean; category?: any; error?: string }> {
   try {
+    // Check authentication and permissions
+    const user = await requireAuth();
+    if (!hasPermission(user.role, "categories", "create")) {
+      return {
+        success: false,
+        error: "Unauthorized: Insufficient permissions",
+      };
+    }
+
     const db = await getDatabase();
     const collection = db.collection<Category>("categories");
 
@@ -91,9 +102,18 @@ export async function updateCategory(
     name?: string;
     code?: string;
     description?: string;
-  }
+  },
 ): Promise<{ success: boolean; category?: any; error?: string }> {
   try {
+    // Check authentication and permissions
+    const user = await requireAuth();
+    if (!hasPermission(user.role, "categories", "update")) {
+      return {
+        success: false,
+        error: "Unauthorized: Insufficient permissions",
+      };
+    }
+
     const db = await getDatabase();
     const collection = db.collection<Category>("categories");
 
@@ -111,7 +131,7 @@ export async function updateCategory(
     const result = await collection.findOneAndUpdate(
       { _id: new ObjectId(id) },
       { $set: data },
-      { returnDocument: "after" }
+      { returnDocument: "after" },
     );
 
     if (!result) {
@@ -136,9 +156,18 @@ export async function updateCategory(
 }
 
 export async function deleteCategory(
-  id: string
+  id: string,
 ): Promise<{ success: boolean; error?: string }> {
   try {
+    // Check authentication and permissions
+    const user = await requireAuth();
+    if (!hasPermission(user.role, "categories", "delete")) {
+      return {
+        success: false,
+        error: "Unauthorized: Insufficient permissions",
+      };
+    }
+
     const db = await getDatabase();
     const categoriesCollection = db.collection<Category>("categories");
 

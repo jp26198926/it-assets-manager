@@ -1,6 +1,6 @@
 "use client";
 
-import type { Issuance } from "@/lib/models/types";
+import type { IssuanceSerialized } from "@/lib/models/types";
 import {
   Dialog,
   DialogContent,
@@ -11,7 +11,7 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { format } from "date-fns";
 
 interface IssuanceDetailsDialogProps {
-  issuance: Issuance;
+  issuance: IssuanceSerialized;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }

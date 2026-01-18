@@ -6,8 +6,21 @@ import Link from "next/link";
 import { MonthlyTicketsReport } from "@/components/reports/monthly-tickets-report";
 import { getTicketsWithDepartment } from "@/lib/actions/tickets";
 import { startOfMonth, endOfMonth } from "date-fns";
+import { getUserProfile } from "@/lib/actions/user";
+import { hasPermission } from "@/lib/models/User";
+import { redirect } from "next/navigation";
 
 export default async function MonthlyTicketsPage() {
+  const userResult = await getUserProfile();
+
+  if (
+    !userResult.success ||
+    !userResult.data ||
+    !hasPermission(userResult.data.role, "reports", "read")
+  ) {
+    redirect("/");
+  }
+
   const allTickets = await getTicketsWithDepartment();
   const now = new Date();
   const monthStart = startOfMonth(now);

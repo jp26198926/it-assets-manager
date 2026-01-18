@@ -1,11 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { AddDepartmentDialog } from "./add-department-dialog";
 import { DepartmentList } from "./department-list";
 import { getDepartments } from "@/lib/actions/employees";
+import { getCurrentUser } from "@/lib/actions/auth";
+import { hasPermission } from "@/lib/models/User";
 import type { Department } from "@/lib/models/types";
 
 interface DepartmentsPageContentProps {
@@ -17,6 +19,17 @@ export function DepartmentsPageContent({
 }: DepartmentsPageContentProps) {
   const [departments, setDepartments] =
     useState<Department[]>(initialDepartments);
+  const [userRole, setUserRole] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      const user = await getCurrentUser();
+      if (user) {
+        setUserRole(user.role);
+      }
+    };
+    fetchUser();
+  }, []);
 
   const handleRefresh = async () => {
     const result = await getDepartments();
@@ -24,6 +37,9 @@ export function DepartmentsPageContent({
       setDepartments(result.data);
     }
   };
+
+  const canCreate =
+    userRole && hasPermission(userRole as any, "departments", "create");
 
   return (
     <div className="space-y-6">
@@ -34,17 +50,20 @@ export function DepartmentsPageContent({
             Manage organizational departments
           </p>
         </div>
-        <AddDepartmentDialog onSuccess={handleRefresh}>
-          <Button>
-            <Plus className="mr-2 h-4 w-4" />
-            Add Department
-          </Button>
-        </AddDepartmentDialog>
+        {canCreate && (
+          <AddDepartmentDialog onSuccess={handleRefresh}>
+            <Button>
+              <Plus className="mr-2 h-4 w-4" />
+              Add Department
+            </Button>
+          </AddDepartmentDialog>
+        )}
       </div>
 
       <DepartmentList
         initialDepartments={departments}
         onDepartmentChange={handleRefresh}
+        userRole={userRole}
       />
     </div>
   );

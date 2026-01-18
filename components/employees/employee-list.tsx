@@ -21,11 +21,14 @@ import { AddEmployeeDialog } from "./add-employee-dialog";
 import { format } from "date-fns";
 import { Pencil, Trash2, Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { hasPermission } from "@/lib/models/User";
 
 export function EmployeeList({
   initialEmployees,
+  userRole,
 }: {
   initialEmployees: EmployeeWithDepartmentSerialized[];
+  userRole: string | null;
 }) {
   const router = useRouter();
   const [employees, setEmployees] = useState(initialEmployees);
@@ -75,6 +78,11 @@ export function EmployeeList({
     const filtered = await getEmployees(search || undefined);
     setEmployees(filtered);
   };
+
+  const canUpdate =
+    userRole && hasPermission(userRole as any, "employees", "update");
+  const canDelete =
+    userRole && hasPermission(userRole as any, "employees", "delete");
 
   const columns = [
     {
@@ -142,32 +150,42 @@ export function EmployeeList({
       ),
       className: "hidden lg:table-cell",
     },
-    {
-      key: "actions",
-      header: "Actions",
-      cell: (employee: EmployeeWithDepartmentSerialized) => (
-        <div className="flex items-center gap-2">
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={() => setEditEmployee(employee)}
-            className="h-8 w-8 p-0"
-          >
-            <Pencil className="h-4 w-4" />
-            <span className="sr-only">Edit</span>
-          </Button>
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={() => setDeleteId(employee._id?.toString() || null)}
-            className="h-8 w-8 p-0 text-destructive hover:text-destructive"
-          >
-            <Trash2 className="h-4 w-4" />
-            <span className="sr-only">Delete</span>
-          </Button>
-        </div>
-      ),
-    },
+    ...(canUpdate || canDelete
+      ? [
+          {
+            key: "actions",
+            header: "Actions",
+            cell: (employee: EmployeeWithDepartmentSerialized) => (
+              <div className="flex items-center gap-2">
+                {canUpdate && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => setEditEmployee(employee)}
+                    className="h-8 w-8 p-0"
+                  >
+                    <Pencil className="h-4 w-4" />
+                    <span className="sr-only">Edit</span>
+                  </Button>
+                )}
+                {canDelete && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() =>
+                      setDeleteId(employee._id?.toString() || null)
+                    }
+                    className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    <span className="sr-only">Delete</span>
+                  </Button>
+                )}
+              </div>
+            ),
+          },
+        ]
+      : []),
   ];
 
   return (

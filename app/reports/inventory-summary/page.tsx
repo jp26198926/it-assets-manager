@@ -5,8 +5,21 @@ import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { InventorySummaryReport } from "@/components/reports/inventory-summary-report";
 import { getInventoryItems } from "@/lib/actions/inventory";
+import { getUserProfile } from "@/lib/actions/user";
+import { hasPermission } from "@/lib/models/User";
+import { redirect } from "next/navigation";
 
 export default async function InventorySummaryPage() {
+  const userResult = await getUserProfile();
+
+  if (
+    !userResult.success ||
+    !userResult.data ||
+    !hasPermission(userResult.data.role, "reports", "read")
+  ) {
+    redirect("/");
+  }
+
   const items = await getInventoryItems({});
 
   return (

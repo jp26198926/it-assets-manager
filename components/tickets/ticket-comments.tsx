@@ -11,6 +11,7 @@ import { format } from "date-fns";
 import { Loader2, MessageSquare, Send } from "lucide-react";
 import type { TicketComment } from "@/lib/models/types";
 import { useToast } from "@/hooks/use-toast";
+import { hasPermission, UserRole } from "@/lib/models/User";
 
 interface TicketCommentsProps {
   ticketId: string;
@@ -20,6 +21,7 @@ interface TicketCommentsProps {
     name: string;
     email: string;
   };
+  userRole: UserRole;
   reportedByEmail: string;
   assignedUserEmail?: string;
   assignedToId?: string;
@@ -29,6 +31,7 @@ export function TicketComments({
   ticketId,
   comments,
   currentUser,
+  userRole,
   reportedByEmail,
   assignedUserEmail,
   assignedToId,
@@ -38,11 +41,17 @@ export function TicketComments({
   const [isPending, startTransition] = useTransition();
   const [commentText, setCommentText] = useState("");
 
-  // Check if current user can comment (owner or assigned tech)
-  const canComment =
-    currentUser.email === reportedByEmail ||
+  // Ticket owner and assigned technician can always comment
+  const isOwner = currentUser.email === reportedByEmail;
+  const isAssigned =
     (assignedUserEmail && currentUser.email === assignedUserEmail) ||
     (assignedToId && currentUser._id === assignedToId);
+
+  // Others need update permission (admin/manager)
+  const hasUpdatePermission = hasPermission(userRole, "tickets", "update");
+
+  // Can comment if: owner, assigned, or has update permission
+  const canComment = isOwner || isAssigned || hasUpdatePermission;
 
   const handleAddComment = () => {
     if (!commentText.trim()) {
@@ -165,7 +174,8 @@ export function TicketComments({
           </div>
         ) : (
           <p className="text-sm text-muted-foreground text-center py-2 border-t">
-            Only the ticket owner or assigned technician can comment
+            Only the ticket owner, assigned technician, or authorized users can
+            comment
           </p>
         )}
       </CardContent>

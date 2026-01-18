@@ -16,6 +16,7 @@ import { Eye } from "lucide-react";
 import Link from "next/link";
 import { getTicketsWithDepartment } from "@/lib/actions/tickets";
 import { format } from "date-fns";
+import { hasPermission, UserRole } from "@/lib/models/User";
 
 const statusVariants: Record<
   TicketStatus,
@@ -39,12 +40,20 @@ const priorityVariants: Record<
   critical: "destructive",
 };
 
-export function TicketList({ initialTickets }: { initialTickets: Ticket[] }) {
+export function TicketList({
+  initialTickets,
+  userRole,
+}: {
+  initialTickets: Ticket[];
+  userRole: UserRole;
+}) {
   const [tickets, setTickets] = useState(initialTickets);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [priorityFilter, setPriorityFilter] = useState<string>("all");
   const [isPending, startTransition] = useTransition();
+
+  const canUpdate = hasPermission(userRole, "tickets", "update");
 
   const handleFilterChange = (
     newSearch: string,

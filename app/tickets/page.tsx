@@ -5,9 +5,23 @@ import { Plus } from "lucide-react";
 import Link from "next/link";
 import { getTicketsWithDepartment } from "@/lib/actions/tickets";
 import { TicketList } from "@/components/tickets/ticket-list";
+import { getUserProfile } from "@/lib/actions/user";
+import { hasPermission } from "@/lib/models/User";
+import { redirect } from "next/navigation";
 
 export default async function TicketsPage() {
+  const userResult = await getUserProfile();
+
+  if (
+    !userResult.success ||
+    !userResult.data ||
+    !hasPermission(userResult.data.role, "tickets", "read")
+  ) {
+    redirect("/");
+  }
+
   const tickets = await getTicketsWithDepartment();
+  const canCreate = hasPermission(userResult.data.role, "tickets", "create");
 
   return (
     <MainLayout>
@@ -16,16 +30,18 @@ export default async function TicketsPage() {
           title="Tickets"
           description="Manage IT support tickets and requests"
           actions={
-            <Link href="/tickets/new">
-              <Button>
-                <Plus className="h-4 w-4 mr-2" />
-                Create Ticket
-              </Button>
-            </Link>
+            canCreate ? (
+              <Link href="/tickets/new">
+                <Button>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Create Ticket
+                </Button>
+              </Link>
+            ) : undefined
           }
         />
 
-        <TicketList initialTickets={tickets} />
+        <TicketList initialTickets={tickets} userRole={userResult.data.role} />
       </div>
     </MainLayout>
   );

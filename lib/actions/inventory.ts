@@ -9,6 +9,8 @@ import type {
   ItemStatus,
 } from "@/lib/models/types";
 import { revalidatePath } from "next/cache";
+import { requireAuth } from "./auth";
+import { hasPermission } from "../models/User";
 
 function generateBarcode(): string {
   const prefix = "IT";
@@ -31,6 +33,11 @@ export async function createInventoryItem(data: {
   notes?: string;
 }): Promise<{ success: boolean; item?: InventoryItem; error?: string }> {
   try {
+    const user = await requireAuth();
+    if (!hasPermission(user.role, "inventory", "create")) {
+      return { success: false, error: "Unauthorized" };
+    }
+
     const db = await getDatabase();
     const collection = db.collection<InventoryItem>("inventory");
 
@@ -181,7 +188,7 @@ export async function getInventoryItems(filters?: {
                 name: "Unknown",
                 code: "UNKNOWN",
               },
-      })
+      }),
     );
 
     return serialized;
@@ -192,7 +199,7 @@ export async function getInventoryItems(filters?: {
 }
 
 export async function getInventoryItemByBarcode(
-  barcode: string
+  barcode: string,
 ): Promise<InventoryItem | null> {
   try {
     const db = await getDatabase();
@@ -206,7 +213,7 @@ export async function getInventoryItemByBarcode(
 }
 
 export async function getInventoryItemById(
-  id: string
+  id: string,
 ): Promise<InventoryItemWithCategorySerialized | null> {
   try {
     const db = await getDatabase();
@@ -316,9 +323,14 @@ export async function updateInventoryItem(
     warrantyExpiry?: string;
     location?: string;
     notes?: string;
-  }
+  },
 ): Promise<{ success: boolean; error?: string }> {
   try {
+    const user = await requireAuth();
+    if (!hasPermission(user.role, "inventory", "update")) {
+      return { success: false, error: "Unauthorized" };
+    }
+
     const db = await getDatabase();
     const collection = db.collection<InventoryItem>("inventory");
 
@@ -379,15 +391,20 @@ export async function updateInventoryItem(
 
 export async function updateItemStatus(
   id: string,
-  status: ItemStatus
+  status: ItemStatus,
 ): Promise<{ success: boolean; error?: string }> {
   return updateInventoryItem(id, { status });
 }
 
 export async function deleteInventoryItem(
-  id: string
+  id: string,
 ): Promise<{ success: boolean; error?: string }> {
   try {
+    const user = await requireAuth();
+    if (!hasPermission(user.role, "inventory", "delete")) {
+      return { success: false, error: "Unauthorized" };
+    }
+
     const db = await getDatabase();
     const collection = db.collection<InventoryItem>("inventory");
 
@@ -400,7 +417,7 @@ export async function deleteInventoryItem(
     // Soft delete by setting status to disposed
     await collection.updateOne(
       { _id: new ObjectId(id) },
-      { $set: { status: "disposed" as ItemStatus, updatedAt: new Date() } }
+      { $set: { status: "disposed" as ItemStatus, updatedAt: new Date() } },
     );
 
     revalidatePath("/inventory");
@@ -414,6 +431,17 @@ export async function deleteInventoryItem(
 
 export async function getInventoryStats() {
   try {
+    const user = await requireAuth();
+    if (!hasPermission(user.role, "inventory", "read")) {
+      return {
+        total: 0,
+        inStock: 0,
+        issued: 0,
+        underRepair: 0,
+        beyondRepair: 0,
+      };
+    }
+
     const db = await getDatabase();
     const collection = db.collection<InventoryItem>("inventory");
 

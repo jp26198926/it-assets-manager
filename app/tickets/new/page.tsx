@@ -3,10 +3,17 @@ import { PageHeader } from "@/components/ui/page-header";
 import { CreateTicketForm } from "@/components/tickets/create-ticket-form";
 import { getInventoryItems } from "@/lib/actions/inventory";
 import { getCurrentUser } from "@/lib/actions/auth";
+import { hasPermission } from "@/lib/models/User";
+import { redirect } from "next/navigation";
 
 export default async function NewTicketPage() {
-  const items = await getInventoryItems();
   const user = await getCurrentUser();
+
+  if (!user || !hasPermission(user.role, "tickets", "create")) {
+    redirect("/");
+  }
+
+  const items = await getInventoryItems();
 
   return (
     <MainLayout>

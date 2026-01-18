@@ -9,6 +9,8 @@ import type {
   EmployeeWithDepartmentSerialized,
 } from "@/lib/models/types";
 import { revalidatePath } from "next/cache";
+import { requireAuth } from "./auth";
+import { hasPermission } from "@/lib/models/User";
 
 export async function createEmployee(data: {
   employeeId: string;
@@ -21,6 +23,11 @@ export async function createEmployee(data: {
   phone?: string;
 }): Promise<{ success: boolean; employee?: Employee; error?: string }> {
   try {
+    const user = await requireAuth();
+    if (!hasPermission(user.role, "employees", "create")) {
+      return { success: false, error: "Unauthorized" };
+    }
+
     const db = await getDatabase();
     const collection = db.collection<Employee>("employees");
 
@@ -72,7 +79,7 @@ export async function createEmployee(data: {
 }
 
 export async function getEmployees(
-  search?: string
+  search?: string,
 ): Promise<EmployeeWithDepartmentSerialized[]> {
   try {
     const db = await getDatabase();
@@ -154,7 +161,7 @@ export async function getEmployees(
           name: emp.department.name,
           code: emp.department.code,
         },
-      })
+      }),
     );
 
     return serialized;
@@ -165,7 +172,7 @@ export async function getEmployees(
 }
 
 export async function getEmployeeById(
-  id: string
+  id: string,
 ): Promise<EmployeeWithDepartmentSerialized | null> {
   try {
     const db = await getDatabase();
@@ -248,6 +255,15 @@ export async function createDepartment(data: {
   description?: string;
 }): Promise<{ success: boolean; department?: Department; error?: string }> {
   try {
+    // Check authentication and permissions
+    const user = await requireAuth();
+    if (!hasPermission(user.role, "departments", "create")) {
+      return {
+        success: false,
+        error: "Unauthorized: Insufficient permissions",
+      };
+    }
+
     const db = await getDatabase();
     const collection = db.collection<Department>("departments");
 
@@ -278,9 +294,14 @@ export async function updateEmployee(
     departmentId?: string;
     position?: string;
     phone?: string;
-  }
+  },
 ): Promise<{ success: boolean; employee?: Employee; error?: string }> {
   try {
+    const user = await requireAuth();
+    if (!hasPermission(user.role, "employees", "update")) {
+      return { success: false, error: "Unauthorized" };
+    }
+
     const db = await getDatabase();
     const collection = db.collection<Employee>("employees");
 
@@ -307,7 +328,7 @@ export async function updateEmployee(
     const result = await collection.findOneAndUpdate(
       { _id: new ObjectId(id) },
       { $set: updateData },
-      { returnDocument: "after" }
+      { returnDocument: "after" },
     );
 
     if (!result) {
@@ -338,9 +359,14 @@ export async function updateEmployee(
 }
 
 export async function deleteEmployee(
-  id: string
+  id: string,
 ): Promise<{ success: boolean; error?: string }> {
   try {
+    const user = await requireAuth();
+    if (!hasPermission(user.role, "employees", "delete")) {
+      return { success: false, error: "Unauthorized" };
+    }
+
     const db = await getDatabase();
     const collection = db.collection<Employee>("employees");
 
@@ -360,7 +386,7 @@ export async function deleteEmployee(
 
 export async function getDepartments(): Promise<{
   success: boolean;
-  data?: Department[];
+  data?: DepartmentSerialized[];
   error?: string;
 }> {
   try {
@@ -375,7 +401,7 @@ export async function getDepartments(): Promise<{
       code: dept.code,
       description: dept.description,
       createdAt: dept.createdAt.toISOString(),
-    })) as Department[];
+    })) as DepartmentSerialized[];
 
     return { success: true, data: serialized };
   } catch (error) {
@@ -385,7 +411,7 @@ export async function getDepartments(): Promise<{
 }
 
 export async function getDepartmentById(
-  id: string
+  id: string,
 ): Promise<Department | null> {
   try {
     const db = await getDatabase();
@@ -404,16 +430,25 @@ export async function updateDepartment(
     name?: string;
     code?: string;
     description?: string;
-  }
+  },
 ): Promise<{ success: boolean; department?: any; error?: string }> {
   try {
+    // Check authentication and permissions
+    const user = await requireAuth();
+    if (!hasPermission(user.role, "departments", "update")) {
+      return {
+        success: false,
+        error: "Unauthorized: Insufficient permissions",
+      };
+    }
+
     const db = await getDatabase();
     const collection = db.collection<Department>("departments");
 
     const result = await collection.findOneAndUpdate(
       { _id: new ObjectId(id) },
       { $set: data },
-      { returnDocument: "after" }
+      { returnDocument: "after" },
     );
 
     if (!result) {
@@ -438,9 +473,18 @@ export async function updateDepartment(
 }
 
 export async function deleteDepartment(
-  id: string
+  id: string,
 ): Promise<{ success: boolean; error?: string }> {
   try {
+    // Check authentication and permissions
+    const user = await requireAuth();
+    if (!hasPermission(user.role, "departments", "delete")) {
+      return {
+        success: false,
+        error: "Unauthorized: Insufficient permissions",
+      };
+    }
+
     const db = await getDatabase();
 
     // Check if department is in use by any employees

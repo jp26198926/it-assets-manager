@@ -18,6 +18,7 @@ import { deleteRole, toggleRoleStatus, getRoles } from "@/lib/actions/roles";
 import { useToast } from "@/hooks/use-toast";
 import { EditRoleDialog } from "./edit-role-dialog";
 import { AddRoleDialog } from "./add-role-dialog";
+import { hasPermission, UserRole } from "@/lib/models/User";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -31,9 +32,10 @@ import {
 
 interface RoleListProps {
   initialRoles: RoleSerialized[];
+  userRole: UserRole;
 }
 
-export function RoleList({ initialRoles }: RoleListProps) {
+export function RoleList({ initialRoles, userRole }: RoleListProps) {
   const { toast } = useToast();
   const [roles, setRoles] = useState<RoleSerialized[]>(initialRoles);
   const [editingRole, setEditingRole] = useState<RoleSerialized | null>(null);
@@ -124,14 +126,20 @@ export function RoleList({ initialRoles }: RoleListProps) {
     }
   };
 
+  const canCreate = hasPermission(userRole, "users", "create");
+  const canUpdate = hasPermission(userRole, "users", "update");
+  const canDelete = hasPermission(userRole, "users", "delete");
+
   return (
     <>
       <div className="flex justify-between items-center mb-4">
         <div className="flex gap-2">
-          <Button onClick={() => setAddDialogOpen(true)}>
-            <Plus className="mr-2 h-4 w-4" />
-            Add Role
-          </Button>
+          {canCreate && (
+            <Button onClick={() => setAddDialogOpen(true)}>
+              <Plus className="mr-2 h-4 w-4" />
+              Add Role
+            </Button>
+          )}
           <Button variant="outline" onClick={handleRefresh} disabled={loading}>
             {loading ? "Refreshing..." : "Refresh"}
           </Button>
@@ -195,38 +203,44 @@ export function RoleList({ initialRoles }: RoleListProps) {
                     <div className="flex justify-end gap-2">
                       {!role.isSystem && (
                         <>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleToggleStatus(role._id)}
-                            disabled={loading}
-                            title={role.isActive ? "Deactivate" : "Activate"}
-                          >
-                            {role.isActive ? (
-                              <ShieldOff className="h-4 w-4" />
-                            ) : (
-                              <ShieldCheck className="h-4 w-4" />
-                            )}
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => setEditingRole(role)}
-                            disabled={loading}
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => setDeletingRoleId(role._id)}
-                            disabled={loading}
-                          >
-                            <Trash2 className="h-4 w-4 text-destructive" />
-                          </Button>
+                          {canUpdate && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleToggleStatus(role._id)}
+                              disabled={loading}
+                              title={role.isActive ? "Deactivate" : "Activate"}
+                            >
+                              {role.isActive ? (
+                                <ShieldOff className="h-4 w-4" />
+                              ) : (
+                                <ShieldCheck className="h-4 w-4" />
+                              )}
+                            </Button>
+                          )}
+                          {canUpdate && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => setEditingRole(role)}
+                              disabled={loading}
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                          )}
+                          {canDelete && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => setDeletingRoleId(role._id)}
+                              disabled={loading}
+                            >
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          )}
                         </>
                       )}
-                      {role.isSystem && (
+                      {role.isSystem && canUpdate && (
                         <Button
                           variant="ghost"
                           size="icon"

@@ -6,8 +6,21 @@ import Link from "next/link";
 import { DailyTicketsReport } from "@/components/reports/daily-tickets-report";
 import { getTicketsWithDepartment } from "@/lib/actions/tickets";
 import { startOfDay, endOfDay } from "date-fns";
+import { getUserProfile } from "@/lib/actions/user";
+import { hasPermission } from "@/lib/models/User";
+import { redirect } from "next/navigation";
 
 export default async function DailyTicketsPage() {
+  const userResult = await getUserProfile();
+
+  if (
+    !userResult.success ||
+    !userResult.data ||
+    !hasPermission(userResult.data.role, "reports", "read")
+  ) {
+    redirect("/");
+  }
+
   const allTickets = await getTicketsWithDepartment();
   const today = new Date();
   const startOfToday = startOfDay(today);

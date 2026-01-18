@@ -9,6 +9,8 @@ import type {
   KnowledgeSearchFilters,
 } from "@/lib/models/Knowledge";
 import { revalidatePath } from "next/cache";
+import { requireAuth } from "./auth";
+import { hasPermission } from "../models/User";
 
 // Helper function to create URL-friendly slug
 function createSlug(title: string): string {
@@ -67,6 +69,11 @@ export async function createArticle(data: {
   error?: string;
 }> {
   try {
+    const user = await requireAuth();
+    if (!hasPermission(user.role, "knowledge", "create")) {
+      return { success: false, error: "Unauthorized" };
+    }
+
     const db = await getDatabase();
     const collection = db.collection<KnowledgeArticle>("knowledge");
 
@@ -317,6 +324,11 @@ export async function updateArticle(
   error?: string;
 }> {
   try {
+    const user = await requireAuth();
+    if (!hasPermission(user.role, "knowledge", "update")) {
+      return { success: false, error: "Unauthorized" };
+    }
+
     const db = await getDatabase();
     const collection = db.collection<KnowledgeArticle>("knowledge");
 
@@ -395,6 +407,11 @@ export async function deleteArticle(
   id: string,
 ): Promise<{ success: boolean; error?: string }> {
   try {
+    const user = await requireAuth();
+    if (!hasPermission(user.role, "knowledge", "delete")) {
+      return { success: false, error: "Unauthorized" };
+    }
+
     const db = await getDatabase();
     const collection = db.collection<KnowledgeArticle>("knowledge");
 

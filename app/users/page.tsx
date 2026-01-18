@@ -8,6 +8,7 @@ import { UserList } from "@/components/users/user-list";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import Link from "next/link";
+import { hasPermission } from "@/lib/models/User";
 
 export const metadata: Metadata = {
   title: "Users | IT Inventory",
@@ -17,10 +18,12 @@ export const metadata: Metadata = {
 export default async function UsersPage() {
   const currentUser = await getCurrentUser();
 
-  // Only admin can access users page
-  if (!currentUser || currentUser.role !== "admin") {
-    redirect("/login");
+  // Check permission to read users
+  if (!currentUser || !hasPermission(currentUser.role, "users", "read")) {
+    redirect("/");
   }
+
+  const canCreate = hasPermission(currentUser.role, "users", "create");
 
   const result = await getUsers();
   const users = result.success && result.data ? result.data : [];
@@ -32,7 +35,7 @@ export default async function UsersPage() {
           title="Users"
           description="Manage user accounts and permissions"
         />
-        <UserList initialUsers={users} />
+        <UserList initialUsers={users} userRole={currentUser.role} />
       </div>
     </MainLayout>
   );

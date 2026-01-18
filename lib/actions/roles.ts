@@ -5,6 +5,8 @@ import type { Role } from "@/lib/models/Role";
 import type { RoleSerialized } from "@/lib/models/types";
 import { revalidatePath } from "next/cache";
 import { ObjectId } from "mongodb";
+import { requireAuth } from "./auth";
+import { hasPermission } from "../models/User";
 
 // Helper to serialize role for client
 function serializeRole(role: Role): RoleSerialized {
@@ -94,6 +96,11 @@ export async function createRole(data: {
   createdBy?: string;
 }): Promise<{ success: boolean; data?: RoleSerialized; error?: string }> {
   try {
+    const user = await requireAuth();
+    if (!hasPermission(user.role, "users", "create")) {
+      return { success: false, error: "Unauthorized" };
+    }
+
     const db = await getDatabase();
     const collection = db.collection<Role>("roles");
 
@@ -145,6 +152,11 @@ export async function updateRole(
   },
 ): Promise<{ success: boolean; data?: RoleSerialized; error?: string }> {
   try {
+    const user = await requireAuth();
+    if (!hasPermission(user.role, "users", "update")) {
+      return { success: false, error: "Unauthorized" };
+    }
+
     const db = await getDatabase();
     const collection = db.collection<Role>("roles");
 
@@ -190,6 +202,11 @@ export async function deleteRole(
   id: string,
 ): Promise<{ success: boolean; error?: string }> {
   try {
+    const user = await requireAuth();
+    if (!hasPermission(user.role, "users", "delete")) {
+      return { success: false, error: "Unauthorized" };
+    }
+
     const db = await getDatabase();
     const collection = db.collection<Role>("roles");
 
@@ -235,6 +252,11 @@ export async function toggleRoleStatus(
   updatedBy?: string,
 ): Promise<{ success: boolean; data?: RoleSerialized; error?: string }> {
   try {
+    const user = await requireAuth();
+    if (!hasPermission(user.role, "users", "update")) {
+      return { success: false, error: "Unauthorized" };
+    }
+
     const db = await getDatabase();
     const collection = db.collection<Role>("roles");
 

@@ -2,8 +2,14 @@
 
 import { ObjectId } from "mongodb";
 import { getDatabase } from "@/lib/mongodb";
-import type { Issuance, InventoryItem } from "@/lib/models/types";
+import type {
+  Issuance,
+  IssuanceSerialized,
+  InventoryItem,
+} from "@/lib/models/types";
 import { revalidatePath } from "next/cache";
+import { requireAuth } from "./auth";
+import { hasPermission } from "../models/User";
 
 export async function createIssuance(data: {
   itemId: string;
@@ -15,6 +21,11 @@ export async function createIssuance(data: {
   notes?: string;
 }): Promise<{ success: boolean; issuance?: Issuance; error?: string }> {
   try {
+    const user = await requireAuth();
+    if (!hasPermission(user.role, "issuance", "create")) {
+      return { success: false, error: "Unauthorized" };
+    }
+
     const db = await getDatabase();
     const issuanceCollection = db.collection<Issuance>("issuances");
     const inventoryCollection = db.collection<InventoryItem>("inventory");
@@ -53,7 +64,7 @@ export async function createIssuance(data: {
 
     await inventoryCollection.updateOne(
       { _id: new ObjectId(data.itemId) },
-      { $set: { status: "issued", updatedAt: new Date() } }
+      { $set: { status: "issued", updatedAt: new Date() } },
     );
 
     revalidatePath("/issuance");
@@ -70,9 +81,14 @@ export async function returnItem(
   data: {
     returnRemarks?: string;
     returnStatus: "good" | "damaged" | "needs_repair" | "beyond_repair";
-  }
+  },
 ): Promise<{ success: boolean; error?: string }> {
   try {
+    const user = await requireAuth();
+    if (!hasPermission(user.role, "issuance", "update")) {
+      return { success: false, error: "Unauthorized" };
+    }
+
     const db = await getDatabase();
     const issuanceCollection = db.collection<Issuance>("issuances");
     const inventoryCollection = db.collection<InventoryItem>("inventory");
@@ -94,7 +110,7 @@ export async function returnItem(
           returnRemarks: data.returnRemarks,
           returnStatus: data.returnStatus,
         },
-      }
+      },
     );
 
     // Determine inventory item status based on return status
@@ -110,7 +126,7 @@ export async function returnItem(
 
     await inventoryCollection.updateOne(
       { _id: issuance.itemId },
-      { $set: { status: itemStatus, updatedAt: new Date() } }
+      { $set: { status: itemStatus, updatedAt: new Date() } },
     );
 
     revalidatePath("/issuance");
@@ -125,7 +141,7 @@ export async function returnItem(
 export async function getIssuances(filters?: {
   status?: "active" | "returned";
   search?: string;
-}): Promise<Issuance[]> {
+}): Promise<IssuanceSerialized[]> {
   try {
     const db = await getDatabase();
     const collection = db.collection<Issuance>("issuances");
@@ -148,7 +164,27 @@ export async function getIssuances(filters?: {
       .find(query)
       .sort({ issuedAt: -1 })
       .toArray();
-    return JSON.parse(JSON.stringify(issuances));
+
+    // Serialize the data
+    return issuances.map((issuance) => ({
+      _id: issuance._id!.toString(),
+      itemId: issuance.itemId.toString(),
+      itemBarcode: issuance.itemBarcode,
+      itemName: issuance.itemName,
+      issuedTo: {
+        type: issuance.issuedTo.type,
+        id: issuance.issuedTo.id.toString(),
+        name: issuance.issuedTo.name,
+      },
+      issuedBy: issuance.issuedBy,
+      issuedAt: issuance.issuedAt.toISOString(),
+      returnedAt: issuance.returnedAt?.toISOString(),
+      expectedReturn: issuance.expectedReturn?.toISOString(),
+      notes: issuance.notes,
+      status: issuance.status,
+      returnRemarks: issuance.returnRemarks,
+      returnStatus: issuance.returnStatus,
+    }));
   } catch (error) {
     console.error("Error fetching issuances:", error);
     return [];

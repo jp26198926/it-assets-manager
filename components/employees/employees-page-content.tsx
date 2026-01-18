@@ -7,7 +7,9 @@ import type { EmployeeWithDepartmentSerialized } from "@/lib/models/types";
 import { EmployeeList } from "./employee-list";
 import { AddEmployeeDialog } from "./add-employee-dialog";
 import { getEmployees } from "@/lib/actions/employees";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { getUserProfile } from "@/lib/actions/user";
+import { hasPermission } from "@/lib/models/User";
 
 export function EmployeesPageContent({
   initialEmployees,
@@ -15,6 +17,20 @@ export function EmployeesPageContent({
   initialEmployees: EmployeeWithDepartmentSerialized[];
 }) {
   const [employees, setEmployees] = useState(initialEmployees);
+  const [userRole, setUserRole] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchUserRole = async () => {
+      const result = await getUserProfile();
+      if (result.success && result.user) {
+        setUserRole(result.user.role);
+      }
+    };
+    fetchUserRole();
+  }, []);
+
+  const canCreate =
+    userRole && hasPermission(userRole as any, "employees", "create");
 
   const handleAddSuccess = async () => {
     // Refresh the employee list after successful creation
@@ -28,16 +44,18 @@ export function EmployeesPageContent({
         title="Employees"
         description="Manage employees for asset issuance"
         actions={
-          <AddEmployeeDialog onSuccess={handleAddSuccess}>
-            <Button>
-              <Plus className="h-4 w-4 mr-2" />
-              Add Employee
-            </Button>
-          </AddEmployeeDialog>
+          canCreate ? (
+            <AddEmployeeDialog onSuccess={handleAddSuccess}>
+              <Button>
+                <Plus className="h-4 w-4 mr-2" />
+                Add Employee
+              </Button>
+            </AddEmployeeDialog>
+          ) : undefined
         }
       />
 
-      <EmployeeList initialEmployees={employees} />
+      <EmployeeList initialEmployees={employees} userRole={userRole} />
     </div>
   );
 }
