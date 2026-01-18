@@ -22,21 +22,27 @@ import {
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
 import { UserMenu } from "./user-menu";
 import { getCurrentUser } from "@/lib/actions/auth";
 
 const navigation = [
   { name: "Dashboard", href: "/", icon: LayoutDashboard },
-  { name: "Inventory", href: "/inventory", icon: Package },
-  { name: "Employees", href: "/employees", icon: Users },
-  { name: "Departments", href: "/departments", icon: Building2 },
-  { name: "Categories", href: "/categories", icon: FolderTree },
-  { name: "Issuance", href: "/issuance", icon: ArrowRightLeft },
+  { type: "separator" as const },
   { name: "Tickets", href: "/tickets", icon: Ticket },
   { name: "Knowledge Base", href: "/knowledgebase", icon: BookOpen },
+  { type: "separator" as const },
+  { name: "Inventory", href: "/inventory", icon: Package },
+  { name: "Issuance", href: "/issuance", icon: ArrowRightLeft },
+  { type: "separator" as const },
   { name: "Reports", href: "/reports", icon: FileText },
-  { name: "Users", href: "/users", icon: UserCog, adminOnly: true },
+  { type: "separator" as const },
+  { name: "Departments", href: "/departments", icon: Building2 },
+  { name: "Employees", href: "/employees", icon: Users },
+  { name: "Categories", href: "/categories", icon: FolderTree },
+  { type: "separator" as const },
   { name: "Roles", href: "/roles", icon: Shield, adminOnly: true },
+  { name: "Users", href: "/users", icon: UserCog, adminOnly: true },
   { name: "Settings", href: "/settings", icon: Settings },
 ];
 
@@ -95,7 +101,7 @@ export function Sidebar() {
       {/* Sidebar */}
       <aside
         className={cn(
-          "fixed top-0 left-0 z-40 h-screen w-64 bg-card border-r transition-transform lg:translate-x-0 neo-raised glass",
+          "fixed top-0 left-0 z-40 h-screen w-64 bg-card border-r transition-transform lg:translate-x-0 neo-raised glass flex flex-col",
           mobileOpen ? "translate-x-0" : "-translate-x-full",
         )}
       >
@@ -109,8 +115,13 @@ export function Sidebar() {
           </div>
         </div>
 
-        <nav className="flex flex-col gap-1 p-4">
-          {navigation.map((item) => {
+        <nav className="flex flex-col gap-1 p-4 overflow-y-auto flex-1">
+          {navigation.map((item, index) => {
+            // Render separator
+            if (item.type === "separator") {
+              return <Separator key={`separator-${index}`} className="my-2" />;
+            }
+
             const isActive = pathname === item.href;
             // Hide admin-only items for non-admin users
             if (item.adminOnly && user?.role !== "admin") {
@@ -119,7 +130,7 @@ export function Sidebar() {
             return (
               <Link
                 key={item.name}
-                href={item.href}
+                href={item.href!}
                 onClick={() => setMobileOpen(false)}
                 className={cn(
                   "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-300",
