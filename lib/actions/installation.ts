@@ -102,6 +102,8 @@ export async function checkInstallationStatus() {
   try {
     // Check if database connection works
     const dbCheck = await checkDatabaseConnection();
+    console.log("dbCheck:", dbCheck);
+
     if (!dbCheck.success) {
       return {
         installed: false,
@@ -113,6 +115,8 @@ export async function checkInstallationStatus() {
     // Check if users exist
     const { db } = await connectToDatabase();
     const usersCount = await db.collection("users").countDocuments();
+
+    console.log("userCount", usersCount);
 
     if (usersCount === 0) {
       return {
@@ -149,7 +153,7 @@ export async function seedDefaultRoles() {
       ([role, permissions]) => ({
         name: role,
         permissions,
-        isSystem: false,
+        isSystem: true,
         isActive: true,
         createdAt: new Date(),
         updatedAt: new Date(),
