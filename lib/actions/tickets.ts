@@ -111,7 +111,8 @@ export async function createTicket(data: {
           : undefined,
       },
       // Auto-assign to technician if the user creating the ticket is a technician
-      assignedToId: user.role === "technician" ? new ObjectId(user.id) : undefined,
+      assignedToId:
+        user.role === "technician" ? new ObjectId(user.id) : undefined,
       itemId: data.itemId ? new ObjectId(data.itemId) : undefined,
       itemBarcode: data.itemBarcode,
       itemName: data.itemName,
@@ -134,12 +135,9 @@ export async function createTicket(data: {
 
     // Send assignment notification if ticket was auto-assigned to technician
     if (user.role === "technician" && ticket.assignedToId) {
-      sendTicketAssignedNotification(
-        ticket,
-        user.name,
-        user.email,
-      ).catch((err) =>
-        console.error("Failed to send ticket assignment notification:", err),
+      sendTicketAssignedNotification(ticket, user.name, user.email).catch(
+        (err) =>
+          console.error("Failed to send ticket assignment notification:", err),
       );
     }
 

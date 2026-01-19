@@ -1,6 +1,7 @@
 # Auto-Assignment Feature for Technicians
 
 ## Feature Overview
+
 When a user with the **technician** role creates a ticket, the ticket is now automatically assigned to them. This streamlines the workflow for technicians who are taking ownership of issues they report.
 
 ## Changes Made
@@ -8,46 +9,48 @@ When a user with the **technician** role creates a ticket, the ticket is now aut
 ### File: `lib/actions/tickets.ts`
 
 #### 1. Auto-Assignment Logic (Line 113)
+
 ```typescript
 // Auto-assign to technician if the user creating the ticket is a technician
 assignedToId: user.role === "technician" ? new ObjectId(user.id) : undefined,
 ```
 
 **Behavior:**
+
 - ✅ **Technician** creates ticket → Auto-assigned to themselves
 - ✅ **Admin/Manager/Employee** creates ticket → No auto-assignment (normal flow)
 
 #### 2. Assignment Notification (Lines 139-147)
+
 ```typescript
 // Send assignment notification if ticket was auto-assigned to technician
 if (user.role === "technician" && ticket.assignedToId) {
-  sendTicketAssignedNotification(
-    ticket,
-    user.name,
-    user.email,
-  ).catch((err) =>
+  sendTicketAssignedNotification(ticket, user.name, user.email).catch((err) =>
     console.error("Failed to send ticket assignment notification:", err),
   );
 }
 ```
 
 **Behavior:**
+
 - Sends email notification to the technician when they are auto-assigned
 - Non-blocking (catches errors to prevent ticket creation failure)
 
 ## Testing Scenarios
 
 ### Scenario 1: Technician Creates a Ticket ✅
+
 1. Login as a user with **technician** role
 2. Navigate to `/tickets/new`
 3. Fill in ticket details and submit
-4. **Expected Result**: 
+4. **Expected Result**:
    - Ticket is created successfully
    - `assignedToId` field contains the technician's user ID
    - Technician receives assignment notification email
    - Ticket appears in technician's "My Tickets" view
 
 ### Scenario 2: Admin/Manager Creates a Ticket ✅
+
 1. Login as a user with **admin** or **manager** role
 2. Navigate to `/tickets/new`
 3. Fill in ticket details and submit
@@ -58,6 +61,7 @@ if (user.role === "technician" && ticket.assignedToId) {
    - Normal ticket creation flow (unchanged)
 
 ### Scenario 3: Employee Creates a Ticket ✅
+
 1. Login as a user with **employee** role
 2. Navigate to `/tickets/new`
 3. Fill in ticket details and submit
