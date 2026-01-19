@@ -24,7 +24,9 @@ const sessionOptions = {
     "complex_password_at_least_32_characters_long",
   cookieName: "ticketing_session",
   cookieOptions: {
-    secure: process.env.NODE_ENV === "production",
+    // For Apache reverse proxy, use env var to control secure flag
+    // Set COOKIE_SECURE=false if Apache handles HTTPS but forwards HTTP to app
+    secure: process.env.COOKIE_SECURE === "true" || false,
     httpOnly: true,
     sameSite: "lax" as const,
     path: basePath || "/", // Use basePath if set, otherwise "/"

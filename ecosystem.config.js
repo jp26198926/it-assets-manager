@@ -9,10 +9,11 @@ module.exports = {
       env: {
         NODE_ENV: "production",
         PORT: 3000,
-        // Force trust proxy for cookie handling
-        TRUST_PROXY: "true",
         // Set basePath if deploying to subdirectory
         NEXT_PUBLIC_BASE_PATH: "/it-assets-manager",
+        // For Apache reverse proxy: set to false since Apache handles HTTPS
+        // Set to true only if the app itself receives HTTPS directly
+        COOKIE_SECURE: "false",
       },
       // Logging
       error_file: "./logs/pm2-error.log",
