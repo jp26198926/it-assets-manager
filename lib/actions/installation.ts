@@ -102,7 +102,6 @@ export async function checkInstallationStatus() {
   try {
     // Check if database connection works
     const dbCheck = await checkDatabaseConnection();
-    console.log("dbCheck:", dbCheck);
 
     if (!dbCheck.success) {
       return {
@@ -115,8 +114,6 @@ export async function checkInstallationStatus() {
     // Check if users exist
     const { db } = await connectToDatabase();
     const usersCount = await db.collection("users").countDocuments();
-
-    console.log("userCount", usersCount);
 
     if (usersCount === 0) {
       return {

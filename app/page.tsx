@@ -18,7 +18,6 @@ export default async function HomePage() {
   const user = await getCurrentUser();
 
   console.log("Logged User", user);
-  return;
 
   // If user is logged in, redirect to dashboard
   if (user) {
