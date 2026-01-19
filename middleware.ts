@@ -3,6 +3,9 @@ import type { NextRequest } from "next/server";
 import { getIronSession } from "iron-session";
 import type { SessionData } from "@/lib/actions/auth";
 
+// Get basePath from environment or default to empty string
+const basePath = process.env.NEXT_PUBLIC_BASE_PATH || "";
+
 const sessionOptions = {
   password:
     process.env.SESSION_SECRET ||
@@ -11,6 +14,9 @@ const sessionOptions = {
   cookieOptions: {
     secure: process.env.NODE_ENV === "production",
     httpOnly: true,
+    sameSite: "lax" as const,
+    path: basePath || "/", // Use basePath if set, otherwise "/"
+    maxAge: 60 * 60 * 24 * 7, // 7 days
   },
 };
 
